@@ -1,0 +1,1 @@
+CREATE INDEX prueba_gallo_vivo_idx ON demo.prueba USING btree (gallo,vivo);

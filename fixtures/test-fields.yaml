@@ -1,0 +1,39 @@
+basic:
+  interview_id:
+    primary_key: true
+    empty: false
+  pk:
+    empty: true
+  workspace:
+    primary_key: true
+  gallo:
+    type: int
+    roster: true
+    index: true
+  vivo:
+    type: bool
+    defval: "true"
+    index: true
+  tel:
+    meta_name: TEL
+
+sensitization:
+  hog_sens:
+    type: int
+    roster: true
+  pct_life:
+    type: double
+  id:
+    type: auto_increment
+
+fks:
+  - table:
+      schema: demo
+      name: prueba
+    fields: [ws_id,user_id]
+    ref_table:
+      schema: demo
+      name: cache
+    ref_fields: [worskpace,user]
+    # on_delete: Restrict # this is the default
+    on_update: Cascade
