@@ -3,52 +3,12 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 use std::option::*;
 use linked_hash_map::LinkedHashMap;
-use once_cell::sync::Lazy;
 
-
-pub trait TypeWriter : Sync+Send+Debug {
+pub trait TypeWriter {
     fn type_to_sql(&self, field_type:&FieldType) -> String;
 }
-
-#[derive(Debug)]
-struct PostgresTypeWriter {}
-unsafe impl Sync for PostgresTypeWriter{}
-unsafe impl Send for PostgresTypeWriter{}
-impl TypeWriter for PostgresTypeWriter {
-    fn type_to_sql(&self, field_type:&FieldType) -> String {
-        match field_type {
-            FieldType::Int => "int".to_owned(),
-            FieldType::BigInt => "bigint".to_owned(),
-            FieldType::Txt => "text".to_owned(),
-            FieldType::Bool => "bool".to_owned(),
-            FieldType::Dbl => "double precision".to_owned(),
-            FieldType::AutoInc => "serial".to_owned(),
-        }
-    }
-}
-
-type TRT = Box<dyn TypeWriter>;
-
-static mut TYPE_WRITER: Lazy<TRT> = Lazy::new(|| {
-    println!("initializing");
-    Box::new(PostgresTypeWriter{})
-});
-
-// fn get_type_writer() -> &'static RwLock<Box<dyn TypeWriter>> {
-//     static INSTANCE: RwLock<Box<dyn TypeWriter>> = RwLock::new(Box::new(PostgresTypeWriter{}));
-//     // INSTANCE.get_or_init(|| {RwLock::new(Box::new(PostgresTypeWriter{}))});
-//     &INSTANCE
-// }
-
-// pub fn set_type_writer(type_writer: Fn() -> Box<impl TypeWriter>) {
-//     TYPE_WRITER = Lazy::new(|| {
-//         println!("reinitializing");
-//         Box::new(PostgresTypeWriter{})
-//     })
-// }
-
 pub trait DBObject {
-    fn to_sql(&self) -> String;
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
 }
 
 fn default_false() -> bool {
@@ -79,8 +39,8 @@ pub enum FieldType {
     AutoInc,
 }
 impl DBObject for FieldType {
-    fn to_sql(&self) -> String {
-        unsafe { TYPE_WRITER.type_to_sql(&self) }
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        type_writer.type_to_sql(&self)
     }
 }
 
@@ -166,7 +126,7 @@ type_writer: Box<dyn TypeWriter>,
         let type_writer = if let Some(tr) = opt_type_writer {
             tr
         } else {
-            Box::new(PostgresTypeWriter{})
+            Box::new(PostgresqlTypeWriter{})
         };
 
  */
@@ -185,13 +145,13 @@ impl Field {
 }
 
 impl DBObject for Field {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         let mut s = match self.name.as_str() {
             "role"=>format!("\"role\""),
             _=>self.name.to_owned(),
         };            
         let att = &self.attributes;
-        s += format!(" {} ", att.dtype.to_sql()).as_str();
+        s += format!(" {} ", att.dtype.to_sql(type_writer)).as_str();
         s += if att.empty {
             "NULL"
         } else {
@@ -250,7 +210,7 @@ impl Grant {
     }
 }
 impl DBObject for Grant {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), self.on.full_name(), self.to)
     }
 }
@@ -266,7 +226,7 @@ impl Owner {
     }
 }
 impl DBObject for Owner {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), self.of.full_name(), self.to)
     }
 }
@@ -277,6 +237,13 @@ pub struct Index {
     pub fields: FieldNames,
 }
 
+impl DBObject for Index {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
+        format!("CREATE INDEX {}_{}_idx ON {} USING btree ({});",
+                self.table.name, self.fields.join("_"), self.table.full_name(),
+                self.fields.join(","))
+    }
+}
 
 type Indexes = Vec<Index>;
 
@@ -287,7 +254,7 @@ pub struct UniqueKey {
     fields: FieldNames, 
 }
 impl DBObject for UniqueKey {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CONSTRAINT {}_uk UNIQUE ({})", self.name, self.fields.join(","))
     }
 }
@@ -298,7 +265,7 @@ pub struct PrimaryKey {
     fields: FieldNames, 
 }
 impl DBObject for PrimaryKey {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CONSTRAINT {}_pk PRIMARY KEY ({})", self.name, self.fields.join(","))
     }
 }
@@ -333,7 +300,7 @@ pub struct ForeignKey {
     pub on_update: FKOn,
 }
 impl DBObject for ForeignKey {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("ALTER TABLE {}\n  ADD CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
                 self.table.full_name(),
                 self.table.name, self.ref_table.name, self.fields.join("_"),
@@ -343,14 +310,6 @@ impl DBObject for ForeignKey {
                 self.on_delete.to_string(),
                 self.on_update.to_string()
         )
-    }
-}
-
-impl DBObject for Index {
-    fn to_sql(&self) -> String {
-        format!("CREATE INDEX {}_{}_idx ON {} USING btree ({});",
-                self.table.name, self.fields.join("_"), self.table.full_name(),
-                self.fields.join(","))
     }
 }
 
@@ -465,10 +424,10 @@ impl Table {
     }
 }
 impl DBObject for Table {
-    fn to_sql(&self) -> String {
-        let cols : Vec<String> = self.fields.iter().map(|f| f.to_sql().to_owned()).collect();
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        let cols : Vec<String> = self.fields.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
         let refs = if let Some(constraints) = &self.constraints {
-            let v: Vec<String> = constraints.iter().map(|f| f.to_sql().to_owned()).collect();
+            let v: Vec<String> = constraints.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
             v
         } else {
             Vec::new()
@@ -492,7 +451,7 @@ impl Schema {
     }
 }
 impl DBObject for Schema {
-    fn to_sql(&self) -> String {
+    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CREATE SCHEMA {} AUTHORIZATION {};", self.name, self.owner)
     }
 }
