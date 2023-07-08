@@ -120,16 +120,6 @@ pub struct Field {
     pub attributes: FieldAttributes,
 }
 
-/*
-, opt_type_writer: Option<Box<dyn TypeWriter>>
-type_writer: Box<dyn TypeWriter>,
-        let type_writer = if let Some(tr) = opt_type_writer {
-            tr
-        } else {
-            Box::new(PostgresqlTypeWriter{})
-        };
-
- */
 impl Field {
     pub fn new(name:&str, attrs:&FieldAttributes) -> Self {
         Field {
@@ -456,6 +446,6 @@ impl DBObject for Schema {
     }
 }
 
-// pub type DynFields = HashMap<String, FieldAttributes>;
 pub type DynFields = LinkedHashMap<String, FieldAttributes>;
 pub type ForeingKeys = Vec<ForeignKey>;
+

@@ -1,5 +1,4 @@
 use dml_tools::sql::*;
-use dml_tools::util::write_yaml_to_file;
 use dml_tools::writers::PostgresqlTypeWriter;
 mod common;
 use common::*;
@@ -24,13 +23,12 @@ fn test_tables() {
     
     let fk = ForeignKey{
         table:tbl.path.to_owned(),
-        // table:ObjectPath::new("demo", "prueba"),
         fields:vec!["ws_id".to_owned(), "user_id".to_owned()],
         ref_table:ObjectPath::new_table("demo", "cache"),
         ref_fields:vec!["ws".to_owned(), "user".to_owned()],
         on_delete:FKOn::Restrict, on_update:FKOn::Restrict,
     };
-    write_yaml_to_file("local-foreign_keys.yaml", &fk);
+    // dml_tools::util::write_yaml_to_file("local-foreign_keys.yaml", &fk);
     // println!("{}", fk.to_string());
     let tfk="tests/fixtures/test-table-fks.sql";
     assert_eq!(fk.to_sql(type_writer.as_ref()), fs::read_to_string(tfk).expect(tfk));
