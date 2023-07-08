@@ -3,29 +3,12 @@ extern crate serde_derive;
 
 use dml_tools::sql::*;
 use dml_tools::util::read_yaml_from_file;
-use log::*;
-
-#[derive(Debug)]
-struct MySQLTR {}
-unsafe impl Sync for MySQLTR{}
-unsafe impl Send for MySQLTR{}
-impl TypeWriter for MySQLTR {
-    fn type_to_sql(&self, field_type:&FieldType) -> String {
-        match field_type {
-            FieldType::Int => "int".to_owned(),
-            FieldType::BigInt => "bigint".to_owned(),
-            FieldType::Txt => "varchar".to_owned(),
-            FieldType::Bool => "bool".to_owned(),
-            FieldType::Dbl => "double".to_owned(),
-            FieldType::AutoInc => "int autoincrement".to_owned(),
-        }
-    }
-}
-
-
+use dml_tools::writers::MysqlTypeWriter;
+use dml_tools::generators::SQL;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::error::Error;
+use log::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MyFields {
@@ -113,11 +96,11 @@ fn has_schema(spec:&MySpec, oschema:&Option<String>) -> bool {
     }
 }
 
-fn grant_perms(sqls:&mut Vec<String>, spec:&MySpec, object:&ObjectPath) {
-    sqls.push(Owner::new(&spec.roles.rw, object).to_sql());
-    sqls.push(Grant::new(GrantType::All, &spec.roles.rw, object).to_sql());
-    sqls.push(Grant::new(GrantType::All, &spec.roles.upd, object).to_sql());
-    sqls.push(Grant::new(GrantType::Select, &spec.roles.ro, object).to_sql());
+fn grant_perms(gen:& mut SQL, spec:&MySpec, object:&ObjectPath) {
+    gen.add(&Owner::new(&spec.roles.rw, object));
+    gen.add(&Grant::new(GrantType::All, &spec.roles.rw, object));
+    gen.add(&Grant::new(GrantType::All, &spec.roles.upd, object));
+    gen.add(&Grant::new(GrantType::Select, &spec.roles.ro, object));
 }
 
 // WARNING: this functions ignores roster fields!
@@ -143,7 +126,7 @@ pub fn get_basic_assign_table_fields(spec:&MySpec) -> (Fields, MyFields) {
 }
 
 fn gen_ddls(spec:&MySpec) -> Vec<String> {
-    let mut sqls = Vec::new();
+    let mut gen= SQL::new(Some(Box::new(MysqlTypeWriter{})));
     let ff=&spec.fields_file;
     match read_my_fields(ff) {
         Ok(fields)=>{
@@ -151,11 +134,11 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             debug!("fields: {fields:#?}");
 
             let schema = Schema::new(&spec.schema, &spec.roles.rw);
-            sqls.push(schema.to_sql());
+            gen.add(&schema);
             let oschema = ObjectPath::new_schema(&schema.name);
-            sqls.push(Grant::new(GrantType::All, &spec.roles.rw, &oschema).to_sql());
-            sqls.push(Grant::new(GrantType::Usage, &spec.roles.upd, &oschema).to_sql());
-            sqls.push(Grant::new(GrantType::Usage, &spec.roles.ro, &oschema).to_sql());
+            gen.add(&Grant::new(GrantType::All, &spec.roles.rw, &oschema));
+            gen.add(&Grant::new(GrantType::Usage, &spec.roles.upd, &oschema));
+            gen.add(&Grant::new(GrantType::Usage, &spec.roles.ro, &oschema));
 
             let u_fields = vec![
                 Field::new("workspace", &FieldAttributes::new_uk_pk(FieldType::Txt)),
@@ -174,9 +157,9 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             ];
             // println!("{u_fields:#?}");
             let t_users = Table::new(&spec.path_table_users(), u_fields);
-            // println!("{}", t_users.to_sql());
-            sqls.push(t_users.to_sql());
-            grant_perms(&mut sqls, spec, &t_users.path);
+            // println!("{}", t_users);
+            gen.add(&t_users);
+            grant_perms(&mut gen, spec, &t_users.path);
 
             let c_fields = vec![
                 Field::new("id", &FieldAttributes::new_nn(FieldType::AutoInc)),
@@ -191,29 +174,29 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             ];
             // println!("{c_fields:#?}");
             let t_cache = Table::new(&spec.path_table_cache(), c_fields);
-            // println!("{}", t_cache.to_sql());
-            sqls.push(t_cache.to_sql());
-            grant_perms(&mut sqls, spec, &t_cache.path);
+            // println!("{}", t_cache);
+            gen.add(&t_cache);
+            grant_perms(&mut gen, spec, &t_cache.path);
 
             let o_seq = ObjectPath::new_sequence(&spec.schema, "asignaciones_cache_id_seq");
-            grant_perms(&mut sqls, spec, &o_seq);
+            grant_perms(&mut gen, spec, &o_seq);
 
             let (m_fields, a_fields) = get_basic_assign_table_fields(&spec);
             let t_main = Table::new(&spec.path_table_main(), m_fields);
-            // println!("{}", t_main.to_sql());
-            sqls.push(t_main.to_sql());
+            // println!("{}", t_main);
+            gen.add(&t_main);
             if let Some(indexes) = t_main.indexes() {
                 for index in indexes.iter() {
                     debug!("Got index: {:?}", index);
-                    sqls.push(index.to_sql())
+                    gen.add(index);
                 }
             }
-            grant_perms(&mut sqls, spec, &t_main.path);
+            grant_perms(&mut gen, spec, &t_main.path);
 
             if let Some(foreign_keys) = &a_fields.foreign_keys {
                 for fk in foreign_keys.iter() {
                     if has_schema(&spec, &fk.table.schema) && has_schema(&spec, &fk.ref_table.schema) {
-                        sqls.push(fk.to_sql())
+                        gen.add(fk);
                     } else {
                         let nfk = ForeignKey{
                             table: ObjectPath::new_table(&spec.schema, &fk.table.name),
@@ -223,14 +206,14 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                             on_update: fk.on_update.clone(),
                             on_delete: fk.on_delete.clone(),
                         };
-                        sqls.push(nfk.to_sql())
+                        gen.add(&nfk);
                     }
                 }
             }
         },
         Err(e)=>error!("Couldn't read assign spec [{ff}]: {}", e)
     }
-    sqls
+    gen.statements().to_owned()
 }
 
 pub fn print_ddls(spec:&MySpec) {
