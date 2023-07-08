@@ -1,9 +1,9 @@
 use crate::sql::{DBObject, TypeWriter};
 use crate::writers::PostgresqlTypeWriter;
 
-#[cfg(windows)]
-const LINE_ENDING: &'static str = "\r\n";
-#[cfg(not(windows))]
+//#[cfg(windows)]
+//const LINE_ENDING: &'static str = "\r\n";
+//#[cfg(not(windows))]
 const LINE_ENDING: &'static str = "\n";
 
 pub type BxTypeWriter = Box<dyn TypeWriter>;
