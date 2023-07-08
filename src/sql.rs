@@ -1,9 +1,4 @@
 use serde::{Deserialize, Serialize};
-// use std::collections::HashMap;
-use linked_hash_map::LinkedHashMap;
-// use crate::util;
-// use std::path::Path;
-// use std::error::Error;
 use std::collections::HashSet;
 use std::option::*;
 
@@ -182,21 +177,6 @@ impl PostgresObject for Field {
 pub type Fields = Vec<Field>;
 type FieldNames = Vec<String>;
 
-#[derive(Clone, Debug)]
-pub struct FValue {
-    pub field: Field,
-    pub val: FieldValue,
-}
-pub type FValues = Vec<FValue>;
-pub type FieldValues = Vec<FieldValue>;
-
-#[derive(Clone, Debug)]
-pub struct Roster {
-    pub field: Field,
-    pub values: FieldValues,
-}
-pub type Rosters = Vec<Roster>;
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum GrantType {
     Select,
@@ -264,21 +244,9 @@ pub struct Index {
     pub fields: FieldNames,
 }
 
-// type DynFields = HashMap<String, FieldAttributes>;
-type DynFields = LinkedHashMap<String, FieldAttributes>;
-type ForeingKeys = Vec<ForeignKey>;
+
 type Indexes = Vec<Index>;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct AsgFields {
-    pub basic: DynFields,
-    pub sensitization: Option<DynFields>,
-    pub fks: Option<ForeingKeys>,
-}
-
-// pub fn read_asg_fields<P: AsRef<Path>>(path: P) -> Result< AsgFields, Box<dyn Error>> {
-//     Ok(util::read_yaml_from_file(path)?)
-// }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UniqueKey {
@@ -493,17 +461,19 @@ impl PostgresObject for Schema {
     }
 }
 
-/*
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::spec::*;
+    use crate::util::write_yaml_to_file;
 
     #[test]
     fn test_fields() {
-        let fields = read_asg_fields("data/test/test-fields.yaml").expect("to open test-fields.yaml");
+        let fields = read_asg_fields("fixtures/test-fields.yaml").expect("to open test-fields.yaml");
         // println!("fields: {fields:#?}");
         assert_eq!(6, fields.basic.len());
-        let t = fields.basic.get("interview_id").expect("to get interview_id");
+        let t = fields.basic.get("id").expect("to get id");
         assert_eq!(t, &FieldAttributes{
             dtype:FieldType::Txt, unique:false, empty: false, roster: false, defval: None,
             primary_key:true, index: false, only_db:false, meta_name: None,
@@ -513,7 +483,7 @@ mod tests {
             dtype:FieldType::Txt, unique:false, empty: true, roster: false, defval: None,
             primary_key:false, index: false, only_db:false, meta_name: None,
         });
-        let t = fields.basic.get("workspace").expect("to get workspace");
+        let t = fields.basic.get("ws").expect("to get ws");
         assert_eq!(t, &FieldAttributes{
             dtype:FieldType::Txt, unique: false, empty: true, roster: false, defval: None,
             primary_key:true, index: false, only_db:false, meta_name: None,
@@ -558,16 +528,16 @@ mod tests {
     fn test_tables() {
         use std::fs;
         
-        let afields = read_asg_fields("data/test/test-fields.yaml").expect("to open test-fields.yaml");
+        let afields = read_asg_fields("fixtures/test-fields.yaml").expect("to open test-fields.yaml");
         // println!("afields: {afields:#?}");
         let fields: Fields = afields.basic.iter().map(|(k,v)| Field::new( k, v)).collect();
         // println!("fields: {fields:#?}");
         let tbl = Table::new(&ObjectPath::new_table("demo", "prueba"), fields);
         // println!("\n{}", tbl.to_sql());
-        let ttf="data/test/test-table.sql";
+        let ttf="fixtures/test-table.sql";
         assert_eq!(tbl.to_sql(), fs::read_to_string(ttf).expect(ttf));
         if let Some(indexes) = tbl.indexes() {
-            let tif="data/test/test-table-idx.sql";
+            let tif="fixtures/test-table-idx.sql";
             assert_eq!(indexes[0].to_sql(), fs::read_to_string(tif).expect(tif));
         }
         
@@ -576,16 +546,15 @@ mod tests {
             // table:ObjectPath::new("demo", "prueba"),
             fields:vec!["ws_id".to_owned(), "user_id".to_owned()],
             ref_table:ObjectPath::new_table("demo", "cache"),
-            ref_fields:vec!["workspace".to_owned(), "user".to_owned()],
+            ref_fields:vec!["ws".to_owned(), "user".to_owned()],
             on_delete:FKOn::Restrict, on_update:FKOn::Restrict,
         };
-        util::write_yaml_to_file("local-prueba.yaml", &fk);
+        write_yaml_to_file("local-prueba.yaml", &fk);
         // println!("{}", fk.to_string());
-        let tfk="data/test/test-table-fks.sql";
+        let tfk="fixtures/test-table-fks.sql";
         assert_eq!(fk.to_sql(), fs::read_to_string(tfk).expect(tfk));
         
 
     }
 
 }
-*/

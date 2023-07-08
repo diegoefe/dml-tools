@@ -16,3 +16,5 @@ Cargo.lock
 
 mkTar*
 *.swp
+.vscode
+local*

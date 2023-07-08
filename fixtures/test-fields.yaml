@@ -1,10 +1,10 @@
 basic:
-  interview_id:
+  id:
     primary_key: true
     empty: false
   pk:
     empty: true
-  workspace:
+  ws:
     primary_key: true
   gallo:
     type: int

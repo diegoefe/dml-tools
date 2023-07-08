@@ -1,9 +1,9 @@
 CREATE TABLE demo.prueba (
-  interview_id text NOT NULL,
+  id text NOT NULL,
   pk text NULL,
-  workspace text NULL,
+  ws text NULL,
   gallo int NULL,
   vivo bool NULL DEFAULT true,
   tel text NULL,
-  CONSTRAINT prueba_interview_id_workspace_pk PRIMARY KEY (interview_id,workspace)
+  CONSTRAINT prueba_id_ws_pk PRIMARY KEY (id,ws)
 );
