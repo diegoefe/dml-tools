@@ -3,15 +3,9 @@ use std::collections::HashSet;
 use std::option::*;
 use linked_hash_map::LinkedHashMap;
 
-pub trait PostgresObject {
+pub trait DBObject {
     fn to_sql(&self) -> String;
 }
-pub trait MySQLObject {
-    fn to_sql(&self) -> String;
-}
-
-pub type DBObject = dyn PostgresObject;
-// pub type DBObject = dyn MySQLObject;
 
 fn default_false() -> bool {
     false
@@ -40,8 +34,8 @@ pub enum FieldType {
     #[serde(rename = "auto_increment")]
     AutoInc,
 }
-impl ToString for FieldType {
-    fn to_string(&self) -> String {
+impl DBObject for FieldType {
+    fn to_sql(&self) -> String {
         match self {
             FieldType::Int => "int".to_owned(),
             FieldType::BigInt => "bigint".to_owned(),
@@ -51,16 +45,6 @@ impl ToString for FieldType {
             FieldType::AutoInc => "serial".to_owned(),
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum FieldValue {
-    Int(i32),
-    BigInt(i64),
-    Txt(String),
-    Dbl(f64),
-    Bool(bool),
-    Empty,
 }
 
 // #[derive(Default)]
@@ -152,14 +136,15 @@ impl Field {
         me
     }
 }
-impl PostgresObject for Field {
+
+impl DBObject for Field {
     fn to_sql(&self) -> String {
         let mut s = match self.name.as_str() {
             "role"=>format!("\"role\""),
             _=>self.name.to_owned(),
         };            
         let att = &self.attributes;
-        s += format!(" {} ", att.dtype.to_string()).as_str();
+        s += format!(" {} ", att.dtype.to_sql()).as_str();
         s += if att.empty {
             "NULL"
         } else {
@@ -217,7 +202,7 @@ impl Grant {
         Grant { permission: perm.to_owned(), to: to.to_string(), on: on.to_owned() }
     }
 }
-impl PostgresObject for Grant {
+impl DBObject for Grant {
     fn to_sql(&self) -> String {
         format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), self.on.full_name(), self.to)
     }
@@ -233,7 +218,7 @@ impl Owner {
         Owner { to: to.to_string(), of: of.to_owned() }
     }
 }
-impl PostgresObject for Owner {
+impl DBObject for Owner {
     fn to_sql(&self) -> String {
         format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), self.of.full_name(), self.to)
     }
@@ -254,7 +239,7 @@ pub struct UniqueKey {
     name: String,
     fields: FieldNames, 
 }
-impl PostgresObject for UniqueKey {
+impl DBObject for UniqueKey {
     fn to_sql(&self) -> String {
         format!("CONSTRAINT {}_uk UNIQUE ({})", self.name, self.fields.join(","))
     }
@@ -265,7 +250,7 @@ pub struct PrimaryKey {
     name: String,
     fields: FieldNames, 
 }
-impl PostgresObject for PrimaryKey {
+impl DBObject for PrimaryKey {
     fn to_sql(&self) -> String {
         format!("CONSTRAINT {}_pk PRIMARY KEY ({})", self.name, self.fields.join(","))
     }
@@ -300,7 +285,7 @@ pub struct ForeignKey {
     #[serde(default="default_on_clause")]
     pub on_update: FKOn,
 }
-impl PostgresObject for ForeignKey {
+impl DBObject for ForeignKey {
     fn to_sql(&self) -> String {
         format!("ALTER TABLE {}\n  ADD CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
                 self.table.full_name(),
@@ -314,7 +299,7 @@ impl PostgresObject for ForeignKey {
     }
 }
 
-impl PostgresObject for Index {
+impl DBObject for Index {
     fn to_sql(&self) -> String {
         format!("CREATE INDEX {}_{}_idx ON {} USING btree ({});",
                 self.table.name, self.fields.join("_"), self.table.full_name(),
@@ -372,7 +357,7 @@ impl ObjectPath {
 pub struct Table {
     pub path: ObjectPath,
     fields: Fields,
-    constraints: Option<Vec<Box<DBObject>>>,
+    constraints: Option<Vec<Box<dyn DBObject>>>,
 }
 impl Table {
     pub fn new(path:&ObjectPath, fields:Fields/*, consts: Option<Vec<Box<DBObject>>>*/) -> Self {
@@ -390,7 +375,7 @@ impl Table {
                 panic!("{} has duplicated fields: {dups:?}", me.path.full_name())
             }
         }
-        let mut cts:Vec<Box<DBObject>> = Vec::new();
+        let mut cts:Vec<Box<dyn DBObject>> = Vec::new();
         let mut uks:Vec<String> = Vec::new();
         let mut pks:Vec<String> = Vec::new();
         for f in me.fields.iter() {
@@ -429,7 +414,7 @@ impl Table {
         }
     }
 }
-impl PostgresObject for Table {
+impl DBObject for Table {
     fn to_sql(&self) -> String {
         let cols : Vec<String> = self.fields.iter().map(|f| f.to_sql().to_owned()).collect();
         let refs = if let Some(constraints) = &self.constraints {
@@ -456,7 +441,7 @@ impl Schema {
         Schema{ name: name.to_string(), owner: owner.to_string(), }
     }
 }
-impl PostgresObject for Schema {
+impl DBObject for Schema {
     fn to_sql(&self) -> String {
         format!("CREATE SCHEMA {} AUTHORIZATION {};", self.name, self.owner)
     }
