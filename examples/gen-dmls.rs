@@ -3,7 +3,6 @@ extern crate serde_derive;
 
 use dml_tools::sql::*;
 use dml_tools::util::read_yaml_from_file;
-use dml_tools::writers::MysqlTypeWriter;
 use dml_tools::generators::SQL;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -94,7 +93,7 @@ fn grant_perms(gen:& mut SQL, spec:&MySpec, object:&ObjectPath) {
     gen.add(&Grant::new(GrantType::Select, &spec.roles.ro, object));
 }
 
-// WARNING: this functions ignores roster fields!
+// WARNING: this functions ignore roster fields!
 //  even though is shouldn't never be a roster in spec.basic
 pub fn get_basic_assign_table_fields(spec:&MySpec) -> (Fields, MyFields) {
     let mut m_fields = vec![
@@ -117,7 +116,8 @@ pub fn get_basic_assign_table_fields(spec:&MySpec) -> (Fields, MyFields) {
 }
 
 fn gen_ddls(spec:&MySpec) -> Vec<String> {
-    let mut gen= SQL::new(Some(Box::new(MysqlTypeWriter{})));
+    let mut gen= SQL::new(Some(Box::new(dml_tools::writers::MysqlTypeWriter{})));
+    // let mut gen= SQL::new(None);
     let ff=&spec.fields_file;
     match read_my_fields(ff) {
         Ok(fields)=>{

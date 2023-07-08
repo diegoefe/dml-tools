@@ -20,6 +20,9 @@ pub fn read_yaml_from_file<T:for<'de> Deserialize<'de>, P: AsRef<Path>>(path: P)
     read_yaml_from_string(&sfile)
 }
 
+pub fn read_file_into_string(file:&str) -> String {
+    fs::read_to_string(file).expect(format!("To read '{file}' into string").as_str())
+}
 
 pub fn write_to_file(file:&str, data:&str) -> bool {
     if let Ok(mut fh) = File::create(file) {
