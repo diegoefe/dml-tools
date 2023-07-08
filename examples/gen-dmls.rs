@@ -63,15 +63,6 @@ pub struct MySpec {
     pub fields_file: String, // points to MyFields aware file
 }
 impl MySpec {
-    pub fn table_main(&self) -> String {
-        format!("{}.{}", self.schema, self.tables.main)
-    }
-    pub fn table_cache(&self) -> String {
-        format!("{}.{}", self.schema, self.tables.cache)
-    }
-    pub fn table_users(&self) -> String {
-        format!("{}.{}", self.schema, self.tables.users)
-    }
     pub fn path_table_main(&self) -> ObjectPath {
         ObjectPath::new_table(&self.schema, &self.tables.main)
     }
@@ -224,9 +215,6 @@ pub fn print_ddls(spec:&MySpec) {
 }
 
 fn main() {
-
-    // set_type_writer(Box::new(MySQLTR{}));
-
     let spec = MySpec{
         schema: "demo".to_owned(),
         tables: MyTables::default(),
