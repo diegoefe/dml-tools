@@ -3,24 +3,26 @@ name = "dml-tools"
 version = "0.1.0"
 edition = "2021"
 authors = ["Diego Florio <diegoefe@gmail.com>"]
-license = "MIT OR Apache-2.0"
-description = "A library for DML generation"
+license = "MIT"
+description = "A library for DML generation from code or YAML files"
 readme = "README.md"
 homepage = "https://github.com/diegoefe/dml-tools"
 repository = "https://github.com/diegoefe/dml-tools"
-keywords = ["sql", "dml", "ddl", "generator"]
-categories = ["sql-generators"]
+categories = ["database"]
+keywords = ["database", "sql", "mysql", "postgres", "sqlite", "dml", "generator"]
 # rust-version = "1.56"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 yaml-merge-keys = { version = "0.6", features = [ "serde_yaml" ] }
-log = "0.4"
 serde_derive = "1"
 linked-hash-map = { version = "0.5.6", features = [ "serde", "serde_impl" ] }
+log = "0.4"
 
 [lib]
+name = "dml_tools"
+path = "src/lib.rs"
 doc-scrape-examples = false
 
 [package.metadata.docs.rs]
