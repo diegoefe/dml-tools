@@ -5,6 +5,24 @@ use dml_tools::sql::*;
 use dml_tools::util::read_yaml_from_file;
 use log::*;
 
+#[derive(Debug)]
+struct MySQLTR {}
+unsafe impl Sync for MySQLTR{}
+unsafe impl Send for MySQLTR{}
+impl TypeWriter for MySQLTR {
+    fn type_to_sql(&self, field_type:&FieldType) -> String {
+        match field_type {
+            FieldType::Int => "int".to_owned(),
+            FieldType::BigInt => "bigint".to_owned(),
+            FieldType::Txt => "varchar".to_owned(),
+            FieldType::Bool => "bool".to_owned(),
+            FieldType::Dbl => "double".to_owned(),
+            FieldType::AutoInc => "int autoincrement".to_owned(),
+        }
+    }
+}
+
+
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::error::Error;
@@ -37,14 +55,14 @@ impl Default for MyRoles {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct AsgTables {
+pub struct MyTables {
     main: String,
     cache: String,
     users: String,
 }
-impl Default for AsgTables {
+impl Default for MyTables {
     fn default() -> Self {
-        AsgTables {
+        MyTables {
             main: "asignaciones".into(),
             cache: "asignaciones_cache".into(),
             users: "users".into(),
@@ -56,7 +74,7 @@ impl Default for AsgTables {
 pub struct MySpec {
     pub schema: String,
     #[serde(default)]
-    pub tables: AsgTables,
+    pub tables: MyTables,
     #[serde(default)]
     pub roles: MyRoles,
     pub fields_file: String, // points to MyFields aware file
@@ -223,9 +241,12 @@ pub fn print_ddls(spec:&MySpec) {
 }
 
 fn main() {
+
+    // set_type_writer(Box::new(MySQLTR{}));
+
     let spec = MySpec{
         schema: "demo".to_owned(),
-        tables: AsgTables::default(),
+        tables: MyTables::default(),
         roles: MyRoles::default(),
         fields_file: "tests/fixtures/test-tables.yaml".to_owned()
     };

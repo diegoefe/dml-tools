@@ -1,7 +1,51 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::option::*;
 use linked_hash_map::LinkedHashMap;
+use once_cell::sync::Lazy;
+
+
+pub trait TypeWriter : Sync+Send+Debug {
+    fn type_to_sql(&self, field_type:&FieldType) -> String;
+}
+
+#[derive(Debug)]
+struct PostgresTypeWriter {}
+unsafe impl Sync for PostgresTypeWriter{}
+unsafe impl Send for PostgresTypeWriter{}
+impl TypeWriter for PostgresTypeWriter {
+    fn type_to_sql(&self, field_type:&FieldType) -> String {
+        match field_type {
+            FieldType::Int => "int".to_owned(),
+            FieldType::BigInt => "bigint".to_owned(),
+            FieldType::Txt => "text".to_owned(),
+            FieldType::Bool => "bool".to_owned(),
+            FieldType::Dbl => "double precision".to_owned(),
+            FieldType::AutoInc => "serial".to_owned(),
+        }
+    }
+}
+
+type TRT = Box<dyn TypeWriter>;
+
+static mut TYPE_WRITER: Lazy<TRT> = Lazy::new(|| {
+    println!("initializing");
+    Box::new(PostgresTypeWriter{})
+});
+
+// fn get_type_writer() -> &'static RwLock<Box<dyn TypeWriter>> {
+//     static INSTANCE: RwLock<Box<dyn TypeWriter>> = RwLock::new(Box::new(PostgresTypeWriter{}));
+//     // INSTANCE.get_or_init(|| {RwLock::new(Box::new(PostgresTypeWriter{}))});
+//     &INSTANCE
+// }
+
+// pub fn set_type_writer(type_writer: Fn() -> Box<impl TypeWriter>) {
+//     TYPE_WRITER = Lazy::new(|| {
+//         println!("reinitializing");
+//         Box::new(PostgresTypeWriter{})
+//     })
+// }
 
 pub trait DBObject {
     fn to_sql(&self) -> String;
@@ -36,14 +80,7 @@ pub enum FieldType {
 }
 impl DBObject for FieldType {
     fn to_sql(&self) -> String {
-        match self {
-            FieldType::Int => "int".to_owned(),
-            FieldType::BigInt => "bigint".to_owned(),
-            FieldType::Txt => "text".to_owned(),
-            FieldType::Bool => "bool".to_owned(),
-            FieldType::Dbl => "double precision".to_owned(),
-            FieldType::AutoInc => "serial".to_owned(),
-        }
+        unsafe { TYPE_WRITER.type_to_sql(&self) }
     }
 }
 
@@ -123,6 +160,16 @@ pub struct Field {
     pub attributes: FieldAttributes,
 }
 
+/*
+, opt_type_writer: Option<Box<dyn TypeWriter>>
+type_writer: Box<dyn TypeWriter>,
+        let type_writer = if let Some(tr) = opt_type_writer {
+            tr
+        } else {
+            Box::new(PostgresTypeWriter{})
+        };
+
+ */
 impl Field {
     pub fn new(name:&str, attrs:&FieldAttributes) -> Self {
         Field {
@@ -360,8 +407,11 @@ pub struct Table {
     constraints: Option<Vec<Box<dyn DBObject>>>,
 }
 impl Table {
-    pub fn new(path:&ObjectPath, fields:Fields/*, consts: Option<Vec<Box<DBObject>>>*/) -> Self {
-        let mut me = Table { path: path.to_owned(), fields, constraints:None };
+    pub fn new(path:&ObjectPath, fields:Fields) -> Self {
+        let mut me = Table {
+            path: path.to_owned(),
+            fields, constraints:None,
+        };
         // lets check for duplicates
         {
             let mut unicos = HashSet::new();
