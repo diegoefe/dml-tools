@@ -26,7 +26,7 @@ sensitization:
   id:
     type: auto_increment
 
-fks:
+foreign_keys:
   - table:
       schema: demo
       name: prueba

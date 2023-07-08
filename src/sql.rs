@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::option::*;
+use linked_hash_map::LinkedHashMap;
 
 pub trait PostgresObject {
     fn to_sql(&self) -> String;
@@ -460,3 +461,7 @@ impl PostgresObject for Schema {
         format!("CREATE SCHEMA {} AUTHORIZATION {};", self.name, self.owner)
     }
 }
+
+// pub type DynFields = HashMap<String, FieldAttributes>;
+pub type DynFields = LinkedHashMap<String, FieldAttributes>;
+pub type ForeingKeys = Vec<ForeignKey>;

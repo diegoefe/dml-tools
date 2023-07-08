@@ -1,9 +1,11 @@
 use dml_tools::sql::*;
-use dml_tools::spec::*;
+
+mod common;
+use common::*;
 
 #[test]
 fn test_fields() {
-    let fields = read_asg_fields("fixtures/test-fields.yaml").expect("to open test-fields.yaml");
+    let fields = read_test_tables("tests/fixtures/test-tables.yaml").expect("to open test-tables.yaml");
     // println!("fields: {fields:#?}");
     assert_eq!(6, fields.basic.len());
     let t = fields.basic.get("id").expect("to get id");
