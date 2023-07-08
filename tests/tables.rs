@@ -1,5 +1,6 @@
 use dml_tools::sql::*;
 use dml_tools::util::write_yaml_to_file;
+use dml_tools::writers::PostgresqlTypeWriter;
 mod common;
 use common::*;
 
@@ -14,10 +15,11 @@ fn test_tables() {
     let tbl = Table::new(&ObjectPath::new_table("demo", "prueba"), fields);
     // println!("\n{}", tbl.to_sql());
     let ttf="tests/fixtures/test-table.sql";
-    assert_eq!(tbl.to_sql(), fs::read_to_string(ttf).expect(ttf));
+    let type_writer = Box::new(PostgresqlTypeWriter{});
+    assert_eq!(tbl.to_sql(type_writer.as_ref()), fs::read_to_string(ttf).expect(ttf));
     if let Some(indexes) = tbl.indexes() {
         let tif="tests/fixtures/test-table-idx.sql";
-        assert_eq!(indexes[0].to_sql(), fs::read_to_string(tif).expect(tif));
+        assert_eq!(indexes[0].to_sql(type_writer.as_ref()), fs::read_to_string(tif).expect(tif));
     }
     
     let fk = ForeignKey{
@@ -31,7 +33,7 @@ fn test_tables() {
     write_yaml_to_file("local-foreign_keys.yaml", &fk);
     // println!("{}", fk.to_string());
     let tfk="tests/fixtures/test-table-fks.sql";
-    assert_eq!(fk.to_sql(), fs::read_to_string(tfk).expect(tfk));
+    assert_eq!(fk.to_sql(type_writer.as_ref()), fs::read_to_string(tfk).expect(tfk));
     
 
 }
