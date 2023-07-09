@@ -186,7 +186,7 @@ impl DBObject for Field {
 pub type Fields = Vec<Field>;
 type FieldNames = Vec<String>;
 
-/// Types of GRANTs
+/// Types of GRANT permissions
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum GrantType {
     Select,
@@ -223,6 +223,7 @@ pub struct Grant {
     pub on: ObjectPath,
 }
 impl Grant {
+    /// Create a GRANT sepecifying permissions, grantee and affected object
     pub fn new(perm:GrantType, to:&str, on:&ObjectPath) -> Self {
         Grant { permission: perm.to_owned(), to: to.to_string(), on: on.to_owned() }
     }
@@ -240,6 +241,7 @@ pub struct Owner {
     pub of: ObjectPath,
 }
 impl Owner {
+    /// Create a Owner specifying user/role and affected object
     pub fn new(to:&str, of:&ObjectPath) -> Self {
         Owner { to: to.to_string(), of: of.to_owned() }
     }
@@ -368,15 +370,19 @@ pub struct ObjectPath {
     pub otype: ObjectType,
 }
 impl ObjectPath {
+    /// Create ObjectPath of Table on schema with name
     pub fn new_table(schema:&str, name:&str) -> Self {
         ObjectPath { schema: Some(schema.to_string()), name: name.to_string(), otype:ObjectType::Table }
     }
+    /// Create ObjectPath of Schema
     pub fn new_schema(name:&str) -> Self {
         ObjectPath { schema: None, name: name.to_string(), otype:ObjectType::Schema }
     }
+    /// Create ObjectPath of a Sequence
     pub fn new_sequence(schema:&str, name:&str) -> Self {
         ObjectPath { schema: Some(schema.to_string()), name: name.to_string(), otype:ObjectType::Sequece }
     }
+    /// Get the full name of this ObjectPath
     pub fn full_name(&self) -> String {
         if let Some(schema) = &self.schema {
             format!("{}.{}", schema, self.name)
@@ -393,6 +399,7 @@ pub struct Table {
     constraints: Option<Vec<Box<dyn DBObject>>>,
 }
 impl Table {
+    /// Create a table with ObjectPath and Fields
     pub fn new(path:&ObjectPath, fields:Fields) -> Self {
         let mut me = Table {
             path: path.to_owned(),
@@ -433,6 +440,7 @@ impl Table {
         }
         me
     }
+    /// Get the indexes of this Table, if any
     pub fn indexes(&self) -> Option<Indexes> {
         let mut idxs:Vec<String> = Vec::new();
         for f in self.fields.iter() {
@@ -474,6 +482,7 @@ pub struct Schema {
     pub owner: String,
 }
 impl Schema {
+    ///  Create a new Schema
     pub fn new(name:&str, owner:&str) -> Self {
         Schema{ name: name.to_string(), owner: owner.to_string(), }
     }
