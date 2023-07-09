@@ -1,5 +1,6 @@
 use crate::sql::{TypeWriter, FieldType};
 
+/// PostgreSQL type serializator
 #[derive(Debug)]
 pub struct Postgresql {}
 impl TypeWriter for Postgresql {
@@ -15,6 +16,7 @@ impl TypeWriter for Postgresql {
     }
 }
 
+/// MySQL type serializator
 #[derive(Debug)]
 pub struct Mysql {}
 impl TypeWriter for Mysql {
@@ -30,6 +32,7 @@ impl TypeWriter for Mysql {
     }
 }
 
+/// SQLite type serializator
 #[derive(Debug)]
 pub struct Sqlite {}
 impl TypeWriter for Sqlite {
