@@ -1,5 +1,5 @@
 use dml_tools::sql::*;
-use dml_tools::writers::PostgresqlTypeWriter;
+use dml_tools::type_writers::Postgresql;
 mod common;
 use common::*;
 
@@ -14,7 +14,7 @@ fn test_tables() {
     let tbl = Table::new(&ObjectPath::new_table("demo", "prueba"), fields);
     // println!("\n{}", tbl.to_sql());
     let ttf="tests/fixtures/test-table.sql";
-    let type_writer = Box::new(PostgresqlTypeWriter{});
+    let type_writer = Box::new(Postgresql{});
     assert_eq!(tbl.to_sql(type_writer.as_ref()), fs::read_to_string(ttf).expect(ttf));
     if let Some(indexes) = tbl.indexes() {
         let tif="tests/fixtures/test-table-idx.sql";

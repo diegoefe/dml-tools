@@ -1,4 +1,6 @@
 pub mod util;
 pub mod sql;
-pub mod generators;
-pub mod writers;
+pub mod type_writers;
+
+mod generators;
+pub use generators::Generator;

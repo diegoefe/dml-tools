@@ -1,5 +1,5 @@
 use crate::sql::{DBObject, TypeWriter};
-use crate::writers::PostgresqlTypeWriter;
+use crate::type_writers::Postgresql;
 
 //#[cfg(windows)]
 //const LINE_ENDING: &'static str = "\r\n";
@@ -8,19 +8,19 @@ const LINE_ENDING: &'static str = "\n";
 
 pub type BxTypeWriter = Box<dyn TypeWriter>;
 
-pub struct SQL {
+pub struct Generator {
     out: Vec<String>,
     type_writer:BxTypeWriter,
 }
 
-impl SQL {
+impl Generator {
     pub fn new(type_writer:Option<BxTypeWriter>) -> Self {
         let type_writer = if let Some(tr) = type_writer {
             tr
         } else {
-            Box::new(PostgresqlTypeWriter{})
+            Box::new(Postgresql{})
         };
-        SQL {
+        Generator {
             out: Vec::new(),
             type_writer,
         }

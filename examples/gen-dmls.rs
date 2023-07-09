@@ -1,9 +1,6 @@
-extern crate serde;
-extern crate serde_derive;
-
 use dml_tools::sql::*;
 use dml_tools::util::read_yaml_from_file;
-use dml_tools::generators::SQL;
+use dml_tools::Generator;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::error::Error;
@@ -86,7 +83,7 @@ fn has_schema(spec:&MySpec, oschema:&Option<String>) -> bool {
     }
 }
 
-fn grant_perms(gen:& mut SQL, spec:&MySpec, object:&ObjectPath) {
+fn grant_perms(gen:& mut Generator, spec:&MySpec, object:&ObjectPath) {
     gen.add(&Owner::new(&spec.roles.rw, object));
     gen.add(&Grant::new(GrantType::All, &spec.roles.rw, object));
     gen.add(&Grant::new(GrantType::All, &spec.roles.upd, object));
@@ -116,8 +113,8 @@ pub fn get_basic_assign_table_fields(spec:&MySpec) -> (Fields, MyFields) {
 }
 
 fn gen_ddls(spec:&MySpec) -> Vec<String> {
-    let mut gen= SQL::new(Some(Box::new(dml_tools::writers::MysqlTypeWriter{})));
-    // let mut gen= SQL::new(None);
+    let mut gen= Generator::new(Some(Box::new(dml_tools::type_writers::Mysql{})));
+    // let mut gen= Generator::new(None);
     let ff=&spec.fields_file;
     match read_my_fields(ff) {
         Ok(fields)=>{
