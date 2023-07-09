@@ -3,7 +3,6 @@ use std::error::Error;
 use std::path::Path;
 use yaml_merge_keys::*;
 use std::fs::{self,File};
-use log::*;
 use std::io::prelude::*;
 
 pub fn read_yaml_from_string<T:for<'de> Deserialize<'de> >(str: &str) -> Result<T, Box<dyn Error>> {
@@ -24,22 +23,9 @@ pub fn read_file_into_string(file:&str) -> String {
     fs::read_to_string(file).expect(format!("To read '{file}' into string").as_str())
 }
 
-pub fn write_to_file(file:&str, data:&str) -> bool {
-    if let Ok(mut fh) = File::create(file) {
-        if fh.write_all(data.as_bytes()).is_err() {
-            error!("Error while writing to '{}'", file);
-            return false
-        }
-    } else {
-        error!("Error encountered while creating file [{}]!", file);
-        return false
-    }
-    true
-}
-
-pub fn write_yaml_to_file<I:for<'de> Serialize>(file_name:&str, doc:&I) {
-    let serialized = serde_yaml::to_string(&doc).expect("To serialize doc");
-    if! write_to_file(file_name, &serialized) {
-        panic!("Could not write {} to '{file_name}'", serialized)
-    }
+pub fn write_yaml_to_file<I:for<'de> Serialize>(file_name:&str, doc:&I)  -> Result<(), Box<dyn Error>> {
+    let serialized = serde_yaml::to_string(&doc)?;
+    let mut fh = File::create(file_name)?;
+    fh.write_all(&serialized.as_bytes())?;
+    Ok(())
 }

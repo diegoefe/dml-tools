@@ -28,10 +28,9 @@ fn test_tables() {
         ref_fields:vec!["ws".to_owned(), "user".to_owned()],
         on_delete:FKOn::Restrict, on_update:FKOn::Restrict,
     };
-    // dml_tools::util::write_yaml_to_file("local-foreign_keys.yaml", &fk);
+    // dml_tools::util::write_yaml_to_file("local-foreign_keys.yaml", &fk).expect("To write tofile");
     // println!("{}", fk.to_string());
     let tfk="tests/fixtures/test-table-fks.sql";
     assert_eq!(fk.to_sql(type_writer.as_ref()), fs::read_to_string(tfk).expect(tfk));
-    
 
 }
