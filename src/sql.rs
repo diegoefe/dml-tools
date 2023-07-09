@@ -4,12 +4,16 @@ use std::fmt::Debug;
 use std::option::*;
 use linked_hash_map::LinkedHashMap;
 
+/// Trait for a type that can convert a FieldType to String
 pub trait TypeWriter {
     fn type_to_sql(&self, field_type:&FieldType) -> String;
 }
+
+/// Trait for serializing a database object to as String
 pub trait DBObject {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
 }
+
 
 fn default_false() -> bool {
     false
@@ -23,6 +27,7 @@ fn default_type() -> FieldType {
     FieldType::Txt
 }
 
+/// Types of table fields
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum FieldType {
     #[serde(rename = "int")]
@@ -44,24 +49,34 @@ impl DBObject for FieldType {
     }
 }
 
+/// Attributes for fields
 // #[derive(Default)]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct FieldAttributes {
+    /// Type of field
     #[serde(rename = "type", default="default_type")]
     pub dtype: FieldType,
+    /// Is it a UNIQUE field?
     #[serde(default="default_false")]
     pub unique: bool,
+    /// Can be NULL?
     #[serde(default="default_true")]
     pub empty: bool,
+    /// Is it a roster?
     #[serde(default="default_false")]
     pub roster: bool,
+    /// Optional default value for thes field
     pub defval: Option<String>,
     #[serde(default="default_false")]
+    /// Is it PRIMARY KEY
     pub primary_key: bool,
     #[serde(default="default_false")]
+    /// Is it INDEXed?
     pub index: bool,
+    /// Should not be used for De/Serialization?
     #[serde(default="default_false")]
     pub only_db: bool,
+    /// Optional name for this field
     // name when searching in InterData
     pub meta_name: Option<String>,
 }
@@ -79,34 +94,41 @@ impl FieldAttributes {
             meta_name: None,
         }
     }
+    /// Initialize default FieldAttributes for this FieldType
     pub fn new(dt:FieldType) -> Self {
         FieldAttributes::new_default(dt)
     }
+    /// Initialize NOT NULL FieldAttributes for this FieldType
     pub fn new_nn(dt:FieldType) -> Self {
         let mut me = FieldAttributes::new_default(dt);
         me.empty = false;
         me
     }
+    /// Initialize NOT NULL + INDEX FieldAttributes for this FieldType
     pub fn new_nn_idx(dt:FieldType) -> Self {
         let mut me = FieldAttributes::new_nn(dt);
         me.index = true;
         me
     }
+    /// Initialize NOT NULL + default value FieldAttributes for this FieldType
     pub fn new_nn_def(dt:FieldType, defval:&str) -> Self {
         let mut me = FieldAttributes::new_nn(dt);
         me.defval = Some(defval.to_string());
         me
     }
+    /// Initialize PrimaryKey FieldAttributes for this FieldType
     pub fn new_pk(dt:FieldType) -> Self {
         let mut me = FieldAttributes::new_nn(dt);
         me.primary_key = true;
         me
     }
+    /// Initialize UNIQUE FieldAttributes for this FieldType
     pub fn new_uk(dt:FieldType) -> Self {
         let mut me = FieldAttributes::new_default(dt);
         me.unique = true;
         me
     }
+    /// Initialize PrimaryKey+UNIQUE FieldAttributes for this FieldType
     pub fn new_uk_pk(dt:FieldType) -> Self {
         let mut me = FieldAttributes::new_uk(dt);
         me.primary_key = true;
@@ -114,6 +136,7 @@ impl FieldAttributes {
     }
 }
 
+/// Field of a Table
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Field {
     pub name: String,
@@ -121,12 +144,14 @@ pub struct Field {
 }
 
 impl Field {
+    /// Initialize Field named name with FieldAttributes
     pub fn new(name:&str, attrs:&FieldAttributes) -> Self {
         Field {
             name:name.to_string(),
             attributes:attrs.clone(),
         }
     }
+    /// Initialize Field named name with FieldAttributes with only_db attributes on
     pub fn new_only_db(name:&str, attrs:&FieldAttributes) -> Self {
         let mut me = Field::new(name, attrs);
         me.attributes.only_db = true;
@@ -157,9 +182,11 @@ impl DBObject for Field {
     }
 }
 
+/// Vector of Field's
 pub type Fields = Vec<Field>;
 type FieldNames = Vec<String>;
 
+/// Types of GRANTs
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum GrantType {
     Select,
@@ -188,6 +215,7 @@ impl ToString for GrantType {
     }
 }
 
+/// GRANT generator
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Grant {
     pub permission: GrantType,
@@ -205,6 +233,7 @@ impl DBObject for Grant {
     }
 }
 
+/// Owner of a database object generator
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Owner {
     pub to: String,
@@ -221,6 +250,7 @@ impl DBObject for Owner {
     }
 }
 
+/// INDEX generator
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Index {
     pub table: ObjectPath,
@@ -238,6 +268,7 @@ impl DBObject for Index {
 type Indexes = Vec<Index>;
 
 
+/// UniqueKey generator
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UniqueKey {
     name: String,
@@ -249,6 +280,7 @@ impl DBObject for UniqueKey {
     }
 }
 
+/// PrimaryKey generator
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PrimaryKey {
     name: String,
@@ -260,6 +292,7 @@ impl DBObject for PrimaryKey {
     }
 }
 
+/// Types of ForeignKey ON clause
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum FKOn {
     Restrict,
@@ -278,6 +311,7 @@ fn default_on_clause() -> FKOn {
     FKOn::Restrict
 }
 
+/// ForeignKey generator
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ForeignKey {
     pub table: ObjectPath,
@@ -303,6 +337,7 @@ impl DBObject for ForeignKey {
     }
 }
 
+/// Types of upper-level objects
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ObjectType {
     Table,
@@ -324,6 +359,7 @@ impl Default for ObjectType {
     }
 }
 
+/// Path of an object
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ObjectPath {
     pub schema: Option<String>,
@@ -350,6 +386,7 @@ impl ObjectPath {
     }
 }
 
+/// TABLE generator
 pub struct Table {
     pub path: ObjectPath,
     fields: Fields,
@@ -431,6 +468,7 @@ impl DBObject for Table {
     }
 }
 
+/// SCHEMA generator
 pub struct Schema {
     pub name: String,
     pub owner: String,
@@ -446,6 +484,8 @@ impl DBObject for Schema {
     }
 }
 
+/// List of Field definitions (for De/Serialization)
 pub type DynFields = LinkedHashMap<String, FieldAttributes>;
-pub type ForeingKeys = Vec<ForeignKey>;
+/// Vector of ForeignKeys
+pub type ForeignKeys = Vec<ForeignKey>;
 
