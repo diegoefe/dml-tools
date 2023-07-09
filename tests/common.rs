@@ -9,7 +9,7 @@ use dml_tools::util::*;
 pub struct TestTables {
     pub basic: DynFields,
     pub sensitization: Option<DynFields>,
-    pub foreign_keys: Option<ForeingKeys>,
+    pub foreign_keys: Option<ForeignKeys>,
 }
 
 #[allow(dead_code)]

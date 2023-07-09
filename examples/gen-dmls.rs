@@ -1,6 +1,6 @@
 use dml_tools::sql::*;
 use dml_tools::util::read_yaml_from_file;
-use dml_tools::Generator;
+use dml_tools::Processor;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::error::Error;
@@ -10,7 +10,7 @@ use log::*;
 pub struct MyFields {
     pub basic: DynFields,
     pub sensitization: Option<DynFields>,
-    pub foreign_keys: Option<ForeingKeys>,
+    pub foreign_keys: Option<ForeignKeys>,
 }
 
 pub fn read_my_fields<P: AsRef<Path>>(path: P) -> Result< MyFields, Box<dyn Error>> {
@@ -83,11 +83,11 @@ fn has_schema(spec:&MySpec, oschema:&Option<String>) -> bool {
     }
 }
 
-fn grant_perms(gen:& mut Generator, spec:&MySpec, object:&ObjectPath) {
-    gen.add(&Owner::new(&spec.roles.rw, object));
-    gen.add(&Grant::new(GrantType::All, &spec.roles.rw, object));
-    gen.add(&Grant::new(GrantType::All, &spec.roles.upd, object));
-    gen.add(&Grant::new(GrantType::Select, &spec.roles.ro, object));
+fn grant_perms(processor:& mut Processor, spec:&MySpec, object:&ObjectPath) {
+    processor.add(&Owner::new(&spec.roles.rw, object));
+    processor.add(&Grant::new(GrantType::All, &spec.roles.rw, object));
+    processor.add(&Grant::new(GrantType::All, &spec.roles.upd, object));
+    processor.add(&Grant::new(GrantType::Select, &spec.roles.ro, object));
 }
 
 // WARNING: this functions ignore roster fields!
@@ -113,8 +113,8 @@ pub fn get_basic_assign_table_fields(spec:&MySpec) -> (Fields, MyFields) {
 }
 
 fn gen_ddls(spec:&MySpec) -> Vec<String> {
-    let mut gen= Generator::new(Some(Box::new(dml_tools::type_writers::Mysql{})));
-    // let mut gen= Generator::new(None);
+    let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Mysql{})));
+    // let mut processor= Processor::new(None);
     let ff=&spec.fields_file;
     match read_my_fields(ff) {
         Ok(fields)=>{
@@ -122,11 +122,11 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             debug!("fields: {fields:#?}");
 
             let schema = Schema::new(&spec.schema, &spec.roles.rw);
-            gen.add(&schema);
+            processor.add(&schema);
             let oschema = ObjectPath::new_schema(&schema.name);
-            gen.add(&Grant::new(GrantType::All, &spec.roles.rw, &oschema));
-            gen.add(&Grant::new(GrantType::Usage, &spec.roles.upd, &oschema));
-            gen.add(&Grant::new(GrantType::Usage, &spec.roles.ro, &oschema));
+            processor.add(&Grant::new(GrantType::All, &spec.roles.rw, &oschema));
+            processor.add(&Grant::new(GrantType::Usage, &spec.roles.upd, &oschema));
+            processor.add(&Grant::new(GrantType::Usage, &spec.roles.ro, &oschema));
 
             let u_fields = vec![
                 Field::new("workspace", &FieldAttributes::new_uk_pk(FieldType::Txt)),
@@ -146,8 +146,8 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             // println!("{u_fields:#?}");
             let t_users = Table::new(&spec.path_table_users(), u_fields);
             // println!("{}", t_users);
-            gen.add(&t_users);
-            grant_perms(&mut gen, spec, &t_users.path);
+            processor.add(&t_users);
+            grant_perms(&mut processor, spec, &t_users.path);
 
             let c_fields = vec![
                 Field::new("id", &FieldAttributes::new_nn(FieldType::AutoInc)),
@@ -163,28 +163,28 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             // println!("{c_fields:#?}");
             let t_cache = Table::new(&spec.path_table_cache(), c_fields);
             // println!("{}", t_cache);
-            gen.add(&t_cache);
-            grant_perms(&mut gen, spec, &t_cache.path);
+            processor.add(&t_cache);
+            grant_perms(&mut processor, spec, &t_cache.path);
 
             let o_seq = ObjectPath::new_sequence(&spec.schema, "asignaciones_cache_id_seq");
-            grant_perms(&mut gen, spec, &o_seq);
+            grant_perms(&mut processor, spec, &o_seq);
 
             let (m_fields, a_fields) = get_basic_assign_table_fields(&spec);
             let t_main = Table::new(&spec.path_table_main(), m_fields);
             // println!("{}", t_main);
-            gen.add(&t_main);
+            processor.add(&t_main);
             if let Some(indexes) = t_main.indexes() {
                 for index in indexes.iter() {
                     debug!("Got index: {:?}", index);
-                    gen.add(index);
+                    processor.add(index);
                 }
             }
-            grant_perms(&mut gen, spec, &t_main.path);
+            grant_perms(&mut processor, spec, &t_main.path);
 
             if let Some(foreign_keys) = &a_fields.foreign_keys {
                 for fk in foreign_keys.iter() {
                     if has_schema(&spec, &fk.table.schema) && has_schema(&spec, &fk.ref_table.schema) {
-                        gen.add(fk);
+                        processor.add(fk);
                     } else {
                         let nfk = ForeignKey{
                             table: ObjectPath::new_table(&spec.schema, &fk.table.name),
@@ -194,14 +194,14 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                             on_update: fk.on_update.clone(),
                             on_delete: fk.on_delete.clone(),
                         };
-                        gen.add(&nfk);
+                        processor.add(&nfk);
                     }
                 }
             }
         },
         Err(e)=>error!("Couldn't read assign spec [{ff}]: {}", e)
     }
-    gen.statements().to_owned()
+    processor.statements().to_owned()
 }
 
 pub fn print_ddls(spec:&MySpec) {
@@ -218,7 +218,7 @@ fn main() {
         roles: MyRoles::default(),
         fields_file: "tests/fixtures/test-tables.yaml".to_owned()
     };
-    let gen = gen_ddls(&spec);
-    debug!("Generated: {gen:#?}");
+    let processor = gen_ddls(&spec);
+    debug!("Generated: {processor:#?}");
     print_ddls(&spec);    
 }

@@ -1,26 +1,25 @@
 use crate::sql::{DBObject, TypeWriter};
 use crate::type_writers::Postgresql;
 
-//#[cfg(windows)]
-//const LINE_ENDING: &'static str = "\r\n";
-//#[cfg(not(windows))]
-const LINE_ENDING: &'static str = "\n";
-
 pub type BxTypeWriter = Box<dyn TypeWriter>;
 
-pub struct Generator {
+/// DML Processor
+///
+/// Collects DBObject's and creates SQL statements using the supplied
+///  TypeWriter or Postgresql if none is provided
+pub struct Processor {
     out: Vec<String>,
     type_writer:BxTypeWriter,
 }
 
-impl Generator {
+impl Processor {
     pub fn new(type_writer:Option<BxTypeWriter>) -> Self {
         let type_writer = if let Some(tr) = type_writer {
             tr
         } else {
             Box::new(Postgresql{})
         };
-        Generator {
+        Processor {
             out: Vec::new(),
             type_writer,
         }
@@ -33,6 +32,6 @@ impl Generator {
         &self.out
     }
     pub fn to_string(&self) -> String {
-        self.out.join(LINE_ENDING)
+        self.out.join("\n")
     }
 }
