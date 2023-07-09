@@ -5,6 +5,7 @@ use yaml_merge_keys::*;
 use std::fs::{self,File};
 use std::io::prelude::*;
 
+/// Deserialize YAML object from String
 pub fn read_yaml_from_string<T:for<'de> Deserialize<'de> >(str: &str) -> Result<T, Box<dyn Error>> {
     use yaml_merge_keys::serde_yaml::Value;
     let sy:Value = serde_yaml::from_str(str)?;
@@ -14,15 +15,18 @@ pub fn read_yaml_from_string<T:for<'de> Deserialize<'de> >(str: &str) -> Result<
     Ok(serde_yaml::from_value(fix?)?)
 }
 
+/// Read file into String and deserialize YAML object
 pub fn read_yaml_from_file<T:for<'de> Deserialize<'de>, P: AsRef<Path>>(path: P) -> Result<T, Box<dyn Error>> {
     let sfile:String = fs::read_to_string(path)?.parse()?;
     read_yaml_from_string(&sfile)
 }
 
+/// Read file into a String
 pub fn read_file_into_string(file:&str) -> String {
     fs::read_to_string(file).expect(format!("To read '{file}' into string").as_str())
 }
 
+/// Serialize YAML object and write it to a file
 pub fn write_yaml_to_file<I:for<'de> Serialize>(file_name:&str, doc:&I)  -> Result<(), Box<dyn Error>> {
     let serialized = serde_yaml::to_string(&doc)?;
     let mut fh = File::create(file_name)?;
