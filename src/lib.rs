@@ -17,3 +17,8 @@ pub mod sql;
 ///
 /// Contains easy to use functions to read and write to YAML files
 pub mod util;
+
+/// Macros module
+///
+/// Handy macros
+pub mod macros;

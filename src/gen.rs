@@ -7,12 +7,12 @@ pub type BxTypeWriter = Box<dyn TypeWriter>;
 ///
 /// Collects DBObject's and creates SQL sql_statements using the supplied
 ///  TypeWriter or Postgresql if none is provided
-pub struct Processor {
-    out: Vec<String>,
+pub struct Processor<'a> {
+    objs: Vec<Box<&'a dyn DBObject>>,
     type_writer:BxTypeWriter,
 }
 
-impl Processor {
+impl <'a> Processor<'a> {
     /// Create a new Processor optionally specifying a TypeWriter to use
     pub fn new(type_writer:Option<BxTypeWriter>) -> Self {
         let type_writer = if let Some(tr) = type_writer {
@@ -21,21 +21,29 @@ impl Processor {
             Box::new(Postgresql{})
         };
         Processor {
-            out: Vec::new(),
+            objs: Vec::new(),
             type_writer,
         }
     }
-    /// Add a DB object to serialize to SQL
-    pub fn add(&mut self, object:&dyn DBObject) -> &Self {
-        self.out.push(object.to_sql(self.type_writer.as_ref()));
+    /// Add a DB object
+    pub fn add(&mut self, object:&'a dyn DBObject) -> &Self {
+        self.objs.push(Box::new(object));
+        self
+    }
+    pub fn add_all(&mut self, object:&'a dyn DBObject) -> &Self {
+        self.objs.push(Box::new(object));
         self
     }
     /// Get the list of serialized SQL sql_statements
     pub fn sql_statements(&self) -> Vec<String> {
-        self.out.clone()
+        let mut out = Vec::new();
+        for obj in &self.objs {
+            out.push(obj.to_sql(self.type_writer.as_ref()))
+        }
+        out
     }
     /// Get a String with all of the SQL statments
     pub fn to_string(&self) -> String {
-        self.out.join("\n")
+        self.sql_statements().join("\n")
     }
 }

@@ -4,6 +4,8 @@ use std::fmt::Debug;
 use std::option::*;
 use linked_hash_map::LinkedHashMap;
 
+// use crate::Processor;
+
 /// Trait for a type that can convert a FieldType to String
 pub trait TypeWriter {
     fn type_to_sql(&self, field_type:&FieldType) -> String;
@@ -13,7 +15,6 @@ pub trait TypeWriter {
 pub trait DBObject {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
 }
-
 
 fn default_false() -> bool {
     false
@@ -258,6 +259,14 @@ pub struct Index {
     pub table: ObjectPath,
     pub fields: FieldNames,
 }
+impl Index {
+    pub fn new(table: &ObjectPath, fields:&FieldNames) -> Self {
+        Index {
+            table:table.to_owned(),
+            fields:fields.to_owned(),
+        }
+    }
+}
 
 impl DBObject for Index {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
@@ -267,7 +276,7 @@ impl DBObject for Index {
     }
 }
 
-type Indexes = Vec<Index>;
+type Indexes = Vec<String>;
 
 
 /// UniqueKey generator
@@ -343,14 +352,14 @@ impl DBObject for ForeignKey {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ObjectType {
     Table,
-    Sequece,
+    Sequence,
     Schema,
 }
 impl ToString for ObjectType {
     fn to_string(&self) -> String {
         match self {
             ObjectType::Table=>"TABLE".to_owned(),
-            ObjectType::Sequece=>"SEQUENCE".to_owned(),
+            ObjectType::Sequence=>"SEQUENCE".to_owned(),
             ObjectType::Schema=>"SCHEMA".to_owned(),
         }
     }
@@ -380,7 +389,7 @@ impl ObjectPath {
     }
     /// Create ObjectPath of a Sequence
     pub fn new_sequence(schema:&str, name:&str) -> Self {
-        ObjectPath { schema: Some(schema.to_string()), name: name.to_string(), otype:ObjectType::Sequece }
+        ObjectPath { schema: Some(schema.to_string()), name: name.to_string(), otype:ObjectType::Sequence }
     }
     /// Get the full name of this ObjectPath
     pub fn full_name(&self) -> String {
@@ -419,7 +428,7 @@ impl Table {
             fields,
         }
     }
-    /// Get the indexes of this Table, if any
+    /// Get the indexed fields in this Table, if any
     pub fn indexes(&self) -> Option<Indexes> {
         let mut idxs:Vec<String> = Vec::new();
         for f in self.fields.iter() {
@@ -428,10 +437,7 @@ impl Table {
             }
         }
         if ! idxs.is_empty() {
-            Some(vec![Index{
-                table:self.path.to_owned(),
-                fields:idxs
-            }])
+            Some(idxs)
         } else {
             None
         }

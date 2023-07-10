@@ -4,6 +4,8 @@ use dml_tools::sql::*;
 use serde::{Deserialize, Serialize};
 use dml_tools::util::*;
 
+use dml_tools::macros::*;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MyRoles {
     pub rw: String,
@@ -20,13 +22,14 @@ impl Default for MyRoles {
     }
 }
 
-
-fn grant_perms(processor:& mut Processor, roles:&MyRoles, object:&ObjectPath) {
-    processor.add(&Owner::new(&roles.rw, object));
-    processor.add(&Grant::new(GrantType::All, &roles.rw, object));
-    processor.add(&Grant::new(GrantType::All, &roles.upd, object));
-    processor.add(&Grant::new(GrantType::Select, &roles.ro, object));
-}
+macro_rules! grant_perms {
+    ($proc:expr, $roles:expr, $opath:expr) => {
+        add_owner!($proc, &($roles).rw, $opath);
+        add_grant!($proc, GrantType::All, &($roles).rw, $opath);
+        add_grant!($proc, GrantType::All, &($roles).upd, $opath);
+        add_grant!($proc, GrantType::Select, &($roles).ro, $opath);
+    }
+}    
 
 #[test]
 fn test_processor() {
@@ -37,9 +40,11 @@ fn test_processor() {
     let schema = Schema::new(&my_schema, &roles.rw);
     proc.add(&schema);
     let oschema = ObjectPath::new_schema(&schema.name);
-    proc.add(&Grant::new(GrantType::All, &roles.rw, &oschema));
-    proc.add(&Grant::new(GrantType::Usage, &roles.upd, &oschema));
-    proc.add(&Grant::new(GrantType::Usage, &roles.ro, &oschema));
+  
+    // add_grant!(proc, g, GrantType::Usage, &roles.rw, &oschema);
+    add_grant!(proc, GrantType::All, &roles.rw, &oschema);
+    add_grant!(proc, GrantType::Usage, &roles.upd, &oschema);
+    add_grant!(proc, GrantType::Usage, &roles.ro, &oschema);
 
     let u_fields = vec![
         Field::new("workspace", &FieldAttributes::new_uk_pk(FieldType::Txt)),
@@ -60,7 +65,7 @@ fn test_processor() {
     let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields);
     // println!("{}", t_users);
     proc.add(&t_users);
-    grant_perms(&mut proc, &roles, &t_users.path);
+    grant_perms!(&mut proc, &roles, &t_users.path);
 
     let c_fields = vec![
         Field::new("id", &FieldAttributes::new_nn(FieldType::AutoInc)),
@@ -77,10 +82,10 @@ fn test_processor() {
     let t_cache = Table::new(&ObjectPath::new_table(&my_schema, "cache"), c_fields);
     // println!("{}", t_cache);
     proc.add(&t_cache);
-    grant_perms(&mut proc, &roles, &t_cache.path);
+    grant_perms!(&mut proc, &roles, &t_cache.path);
 
     let o_seq = ObjectPath::new_sequence(&my_schema, "asignaciones_cache_id_seq");
-    grant_perms(&mut proc, &roles, &o_seq);
+    grant_perms!(&mut proc, &roles, &o_seq);
     // println!("{}", proc.to_string());
     assert_eq!(proc.to_string(), read_file_into_string("tests/fixtures/proc.sql"));
     assert_eq!(proc.sql_statements().len(), 18);
