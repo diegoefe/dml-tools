@@ -10,7 +10,7 @@ pub mod type_writers;
 
 /// SQL module
 ///
-/// Defines many type of database objects to generate SQL statements from
+/// Defines many type of database objects to generate SQL sql_statements from
 pub mod sql;
 
 /// Util module

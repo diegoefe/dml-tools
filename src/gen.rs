@@ -5,7 +5,7 @@ pub type BxTypeWriter = Box<dyn TypeWriter>;
 
 /// DML processor and SQL generator
 ///
-/// Collects DBObject's and creates SQL statements using the supplied
+/// Collects DBObject's and creates SQL sql_statements using the supplied
 ///  TypeWriter or Postgresql if none is provided
 pub struct Processor {
     out: Vec<String>,
@@ -30,9 +30,9 @@ impl Processor {
         self.out.push(object.to_sql(self.type_writer.as_ref()));
         self
     }
-    /// Get the list of serialized SQL statements
-    pub fn statements(&self) -> &Vec<String> {
-        &self.out
+    /// Get the list of serialized SQL sql_statements
+    pub fn sql_statements(&self) -> Vec<String> {
+        self.out.clone()
     }
     /// Get a String with all of the SQL statments
     pub fn to_string(&self) -> String {
