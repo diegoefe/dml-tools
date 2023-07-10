@@ -393,52 +393,31 @@ impl ObjectPath {
 }
 
 /// TABLE generator
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Table {
     pub path: ObjectPath,
-    fields: Fields,
-    constraints: Option<Vec<Box<dyn DBObject>>>,
+    pub fields: Fields,
 }
 impl Table {
     /// Create a table with ObjectPath and Fields
     pub fn new(path:&ObjectPath, fields:Fields) -> Self {
-        let mut me = Table {
-            path: path.to_owned(),
-            fields, constraints:None,
-        };
         // lets check for duplicates
         {
             let mut unicos = HashSet::new();
             let mut dups = Vec::new();
-            for f in me.fields.iter() {
+            for f in fields.iter() {
                 if ! unicos.insert(&f.name) {
                     dups.push(&f.name)
                 }
             }
             if ! dups.is_empty() {                
-                panic!("{} has duplicated fields: {dups:?}", me.path.full_name())
+                panic!("{} has duplicated fields: {dups:?}", path.full_name())
             }
         }
-        let mut cts:Vec<Box<dyn DBObject>> = Vec::new();
-        let mut uks:Vec<String> = Vec::new();
-        let mut pks:Vec<String> = Vec::new();
-        for f in me.fields.iter() {
-            if f.attributes.primary_key {
-                pks.push(f.name.to_owned())
-            }
-            if f.attributes.unique {
-                uks.push(f.name.to_owned())
-            }
+        Table {
+            path: path.to_owned(),
+            fields,
         }
-        if ! pks.is_empty() {
-            cts.push(Box::new(PrimaryKey{ name: format!("{}_{}", me.path.name, pks.join("_")), fields:pks }))
-        }
-        if ! uks.is_empty() {
-            cts.push(Box::new(UniqueKey{ name: format!("{}_{}", me.path.name, uks.join("_")), fields:uks}))
-        }
-        if ! cts.is_empty() {
-            me.constraints = Some(cts)
-        }
-        me
     }
     /// Get the indexes of this Table, if any
     pub fn indexes(&self) -> Option<Indexes> {
@@ -461,12 +440,24 @@ impl Table {
 impl DBObject for Table {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         let cols : Vec<String> = self.fields.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
-        let refs = if let Some(constraints) = &self.constraints {
-            let v: Vec<String> = constraints.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
-            v
-        } else {
-            Vec::new()
-        };
+        let mut cts:Vec<Box<dyn DBObject>> = Vec::new();
+        let mut uks:Vec<String> = Vec::new();
+        let mut pks:Vec<String> = Vec::new();
+        for f in self.fields.iter() {
+            if f.attributes.primary_key {
+                pks.push(f.name.to_owned())
+            }
+            if f.attributes.unique {
+                uks.push(f.name.to_owned())
+            }
+        }
+        if ! pks.is_empty() {
+            cts.push(Box::new(PrimaryKey{ name: format!("{}_{}", self.path.name, pks.join("_")), fields:pks }))
+        }
+        if ! uks.is_empty() {
+            cts.push(Box::new(UniqueKey{ name: format!("{}_{}", self.path.name, uks.join("_")), fields:uks}))
+        }
+        let refs : Vec<String> = cts.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
         let mut t=format!("CREATE TABLE {} (\n  {}", self.path.full_name(), cols.join(",\n  "));
         if ! refs.is_empty() {
             t += format!(",\n  {}", refs.join(",\n  ")).as_str()
