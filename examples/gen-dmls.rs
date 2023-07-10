@@ -90,28 +90,6 @@ fn grant_perms(processor:& mut Processor, spec:&MySpec, object:&ObjectPath) {
     processor.add(&Grant::new(GrantType::Select, &spec.roles.ro, object));
 }
 
-// WARNING: this functions ignore roster fields!
-//  even though is shouldn't never be a roster in spec.basic
-pub fn get_basic_assign_table_fields(spec:&MySpec) -> (Fields, MyFields) {
-    let mut m_fields = vec![
-        Field::new_only_db("interview_id", &FieldAttributes::new_pk(FieldType::BigInt)),
-        Field::new_only_db("responsible", &FieldAttributes::new_nn(FieldType::Txt)),
-        Field::new_only_db("workspace", &FieldAttributes::new_nn_idx(FieldType::Txt)),
-        Field::new_only_db("ts", &FieldAttributes::new_nn_idx(FieldType::Txt)),
-        Field::new_only_db("habilitado", &FieldAttributes::new_nn_def(FieldType::Bool, "true")),
-        Field::new_only_db("survey_id", &FieldAttributes::new(FieldType::Int)),
-        Field::new_only_db("agregado", &FieldAttributes::new_nn_def(FieldType::Bool, "false")),
-    ];
-    let a_fields = read_my_fields(&spec.fields_file).expect(format!("Read fields from '{}'", spec.fields_file).as_str());
-    for (name, attrs) in a_fields.basic.iter() {
-        if ! attrs.roster {
-            m_fields.push(Field{ name:name.to_owned(), attributes:attrs.to_owned()})
-        }
-    }
-    // println!("{m_fields:#?}");
-    (m_fields, a_fields)
-}
-
 fn gen_ddls(spec:&MySpec) -> Vec<String> {
     let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Mysql{})));
     // let mut processor= Processor::new(None);
@@ -169,7 +147,22 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             let o_seq = ObjectPath::new_sequence(&spec.schema, "asignaciones_cache_id_seq");
             grant_perms(&mut processor, spec, &o_seq);
 
-            let (m_fields, a_fields) = get_basic_assign_table_fields(&spec);
+            // let (m_fields, a_fields) = get_basic_assign_table_fields(&spec);
+            let mut m_fields = vec![
+                Field::new_only_db("interview_id", &FieldAttributes::new_pk(FieldType::BigInt)),
+                Field::new_only_db("responsible", &FieldAttributes::new_nn(FieldType::Txt)),
+                Field::new_only_db("workspace", &FieldAttributes::new_nn_idx(FieldType::Txt)),
+                Field::new_only_db("ts", &FieldAttributes::new_nn_idx(FieldType::Txt)),
+                Field::new_only_db("habilitado", &FieldAttributes::new_nn_def(FieldType::Bool, "true")),
+                Field::new_only_db("survey_id", &FieldAttributes::new(FieldType::Int)),
+                Field::new_only_db("agregado", &FieldAttributes::new_nn_def(FieldType::Bool, "false")),
+            ];
+            let a_fields = read_my_fields(&spec.fields_file).expect(format!("Read fields from '{}'", spec.fields_file).as_str());
+            for (name, attrs) in a_fields.basic.iter() {
+                if ! attrs.roster {
+                    m_fields.push(Field{ name:name.to_owned(), attributes:attrs.to_owned()})
+                }
+            }
             let t_main = Table::new(&spec.path_table_main(), m_fields);
             // println!("{}", t_main);
             processor.add(&t_main);
@@ -201,7 +194,7 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
         },
         Err(e)=>error!("Couldn't read assign spec [{ff}]: {}", e)
     }
-    processor.statements().to_owned()
+    processor.sql_statements().to_owned()
 }
 
 pub fn print_ddls(spec:&MySpec) {
