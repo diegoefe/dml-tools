@@ -7,4 +7,5 @@ then
 else
     arg=$@
 fi
+export RUST_TEST_THREADS=1
 cross ${arg} --target x86_64-pc-windows-gnu
