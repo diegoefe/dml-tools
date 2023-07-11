@@ -276,8 +276,7 @@ impl DBObject for Index {
     }
 }
 
-type Indexes = Vec<String>;
-
+type Indexes = Vec<Index>;
 
 /// UniqueKey generator
 #[derive(Serialize, Deserialize, Debug)]
@@ -437,7 +436,7 @@ impl Table {
             }
         }
         if ! idxs.is_empty() {
-            Some(idxs)
+            Some(vec![Index{ table:self.path.to_owned(), fields:idxs}])
         } else {
             None
         }
