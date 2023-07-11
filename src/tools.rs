@@ -61,6 +61,10 @@ impl <'a> Processor<'a> {
     pub fn write_to_file(&self, file_name:&str) -> Result<(), Box<dyn Error>> {
         Ok(write_yaml_to_file(file_name, &self.objs)?)
     }
+    /// Get number of objects present
+    pub fn num_objects(&self) -> usize {
+        self.objs.len()
+    }
 }
 
 

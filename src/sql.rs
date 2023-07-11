@@ -312,8 +312,8 @@ type Indexes = Vec<Index>;
 /// UniqueKey generator
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UniqueKey {
-    name: String,
-    fields: FieldNames, 
+    pub name: String,
+    pub fields: FieldNames, 
 }
 #[typetag::serde]
 impl DBObject for UniqueKey {
@@ -325,8 +325,8 @@ impl DBObject for UniqueKey {
 /// PrimaryKey generator
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PrimaryKey {
-    name: String,
-    fields: FieldNames, 
+    pub name: String,
+    pub fields: FieldNames, 
 }
 #[typetag::serde]
 impl DBObject for PrimaryKey {

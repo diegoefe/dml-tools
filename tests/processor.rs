@@ -1,3 +1,5 @@
+use std::fs::remove_file;
+
 use dml_tools::Loader;
 use dml_tools::Processor;
 use dml_tools::type_writers::Postgresql;
@@ -44,7 +46,7 @@ macro_rules! grant_perms {
 #[test]
 fn test_processor_from_code() {
     let mut proc = Processor::new(Some(Box::new(Postgresql{})));
-    assert_eq!(proc.sql_statements().len(), 0);
+    assert_eq!(proc.num_objects(), 0);
     let roles = MyRoles::default();
     let my_schema = String::from("my_schema");
     let schema = Schema::new(&my_schema, &roles.rw);
@@ -99,7 +101,7 @@ fn test_processor_from_code() {
     grant_perms!(&mut proc, &roles, &o_seq);
     // println!("{}", proc.to_string());
     assert_eq!(proc.to_string(), read_file_into_string("tests/fixtures/proc.sql"));
-    assert_eq!(proc.sql_statements().len(), NUM_STATEMENTS);
+    assert_eq!(proc.num_objects(), NUM_STATEMENTS);
 
     proc.write_to_file(DES_SER_FILE).expect("to write proc to file");
 
@@ -109,7 +111,10 @@ fn test_processor_from_code() {
 fn test_processor_from_file() {
     let loader = Loader::new(DES_SER_FILE).unwrap();
     let proc = Processor::new_with_objects(loader.objects(), None);
-    assert_eq!(proc.sql_statements().len(), NUM_STATEMENTS);
+    assert_eq!(proc.num_objects(), NUM_STATEMENTS);
     proc.write_to_file(DES_SER_FILE_COMP).expect("to write comp file");
-    assert_eq!(read_file_into_string(DES_SER_FILE), read_file_into_string(DES_SER_FILE_COMP))
+    assert_eq!(read_file_into_string(DES_SER_FILE), read_file_into_string(DES_SER_FILE_COMP));
+
+    remove_file(DES_SER_FILE).unwrap();
+    remove_file(DES_SER_FILE_COMP).unwrap();
 }
