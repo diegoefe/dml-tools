@@ -12,7 +12,9 @@ pub trait TypeWriter {
 }
 
 /// Trait for serializing a database object to as String
-pub trait DBObject {
+// #[typetag::serde(tag = "type")]
+#[typetag::serde(tag = "tag")]
+pub trait DBObject : Debug {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
 }
 
@@ -28,6 +30,19 @@ fn default_type() -> FieldType {
     FieldType::Txt
 }
 
+fn is_default_dtype(t:&FieldType) -> bool {
+    *t == default_type()
+}
+
+fn is_default_false(b:&bool) -> bool {
+    *b == false
+}
+fn is_default_true(b:&bool) -> bool {
+    *b == true
+}
+fn is_none(opt:&Option<String>) -> bool {
+    opt.is_none()
+}
 /// Types of table fields
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum FieldType {
@@ -44,6 +59,7 @@ pub enum FieldType {
     #[serde(rename = "auto_increment")]
     AutoInc,
 }
+#[typetag::serde]
 impl DBObject for FieldType {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         type_writer.type_to_sql(&self)
@@ -56,29 +72,38 @@ impl DBObject for FieldType {
 pub struct FieldAttributes {
     /// Type of field
     #[serde(rename = "type", default="default_type")]
+    #[serde(skip_serializing_if = "is_default_dtype")]
     pub dtype: FieldType,
     /// Is it a UNIQUE field?
     #[serde(default="default_false")]
+    #[serde(skip_serializing_if = "is_default_false")]
     pub unique: bool,
     /// Can be NULL?
     #[serde(default="default_true")]
+    #[serde(skip_serializing_if = "is_default_true")]
     pub empty: bool,
     /// Is it a roster?
     #[serde(default="default_false")]
+    #[serde(skip_serializing_if = "is_default_false")]
     pub roster: bool,
     /// Optional default value for thes field
+    #[serde(skip_serializing_if = "is_none")]
     pub defval: Option<String>,
     #[serde(default="default_false")]
+    #[serde(skip_serializing_if = "is_default_false")]
     /// Is it PRIMARY KEY
     pub primary_key: bool,
     #[serde(default="default_false")]
+    #[serde(skip_serializing_if = "is_default_false")]
     /// Is it INDEXed?
     pub index: bool,
     /// Should not be used for De/Serialization?
     #[serde(default="default_false")]
+    #[serde(skip_serializing_if = "is_default_false")]
     pub only_db: bool,
     /// Optional name for this field
     // name when searching in InterData
+    #[serde(skip_serializing_if = "is_none")]
     pub meta_name: Option<String>,
 }
 impl FieldAttributes {
@@ -135,6 +160,11 @@ impl FieldAttributes {
         me.primary_key = true;
         me
     }
+    pub fn new_meta(dt:FieldType, meta:&str) -> Self {
+        let mut me = FieldAttributes::new_default(dt);
+        me.meta_name = Some(meta.to_string());
+        me
+    }
 }
 
 /// Field of a Table
@@ -143,7 +173,6 @@ pub struct Field {
     pub name: String,
     pub attributes: FieldAttributes,
 }
-
 impl Field {
     /// Initialize Field named name with FieldAttributes
     pub fn new(name:&str, attrs:&FieldAttributes) -> Self {
@@ -159,7 +188,7 @@ impl Field {
         me
     }
 }
-
+#[typetag::serde]
 impl DBObject for Field {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         let mut s = match self.name.as_str() {
@@ -229,6 +258,7 @@ impl Grant {
         Grant { permission: perm.to_owned(), to: to.to_string(), on: on.to_owned() }
     }
 }
+#[typetag::serde]
 impl DBObject for Grant {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), self.on.full_name(), self.to)
@@ -247,6 +277,7 @@ impl Owner {
         Owner { to: to.to_string(), of: of.to_owned() }
     }
 }
+#[typetag::serde]
 impl DBObject for Owner {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), self.of.full_name(), self.to)
@@ -267,7 +298,7 @@ impl Index {
         }
     }
 }
-
+#[typetag::serde]
 impl DBObject for Index {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CREATE INDEX {}_{}_idx ON {} USING btree ({});",
@@ -284,6 +315,7 @@ pub struct UniqueKey {
     name: String,
     fields: FieldNames, 
 }
+#[typetag::serde]
 impl DBObject for UniqueKey {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CONSTRAINT {}_uk UNIQUE ({})", self.name, self.fields.join(","))
@@ -296,6 +328,7 @@ pub struct PrimaryKey {
     name: String,
     fields: FieldNames, 
 }
+#[typetag::serde]
 impl DBObject for PrimaryKey {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CONSTRAINT {}_pk PRIMARY KEY ({})", self.name, self.fields.join(","))
@@ -333,6 +366,7 @@ pub struct ForeignKey {
     #[serde(default="default_on_clause")]
     pub on_update: FKOn,
 }
+#[typetag::serde]
 impl DBObject for ForeignKey {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("ALTER TABLE {}\n  ADD CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
@@ -368,6 +402,7 @@ impl Default for ObjectType {
         ObjectType::Table
     }
 }
+
 
 /// Path of an object
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -442,6 +477,7 @@ impl Table {
         }
     }
 }
+#[typetag::serde]
 impl DBObject for Table {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         let cols : Vec<String> = self.fields.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
@@ -473,6 +509,7 @@ impl DBObject for Table {
 }
 
 /// SCHEMA generator
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Schema {
     pub name: String,
     pub owner: String,
@@ -483,6 +520,7 @@ impl Schema {
         Schema{ name: name.to_string(), owner: owner.to_string(), }
     }
 }
+#[typetag::serde]
 impl DBObject for Schema {
     fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
         format!("CREATE SCHEMA {} AUTHORIZATION {};", self.name, self.owner)
@@ -493,4 +531,3 @@ impl DBObject for Schema {
 pub type DynFields = LinkedHashMap<String, FieldAttributes>;
 /// Vector of ForeignKeys
 pub type ForeignKeys = Vec<ForeignKey>;
-

@@ -10,7 +10,7 @@ homepage = "https://github.com/diegoefe/dml-tools"
 repository = "https://github.com/diegoefe/dml-tools"
 categories = ["database"]
 keywords = ["database", "sql", "mysql", "postgres", "sqlite", "dml", "generator"]
-# rust-version = "1.56"
+rust-version = "1.62" # typetag requires this mininum version!
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -18,6 +18,7 @@ serde_yaml = "0.8"
 yaml-merge-keys = { version = "0.6", features = [ "serde_yaml" ] }
 serde_derive = "1"
 linked-hash-map = { version = "0.5.6", features = [ "serde", "serde_impl" ] }
+typetag = "0.2"
 
 [dev-dependencies]
 log = "0.4"
