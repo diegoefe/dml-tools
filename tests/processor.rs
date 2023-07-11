@@ -1,3 +1,4 @@
+use dml_tools::Loader;
 use dml_tools::Processor;
 use dml_tools::type_writers::Postgresql;
 use dml_tools::sql::*;
@@ -106,13 +107,9 @@ fn test_processor_from_code() {
 
 #[test]
 fn test_processor_from_file() {
-    let data = read_file_into_string(DES_SER_FILE);
-    // println!("{data}");
-    let objs : Vec<Box<dyn DBObject>> = serde_yaml::from_str(&data).expect("To parse yaml");
-    // println!("Objs: {objs:#?}");
-    let proc = Processor::new_with_objects(&objs, None);
+    let loader = Loader::new(DES_SER_FILE).unwrap();
+    let proc = Processor::new_with_objects(loader.objects(), None);
     assert_eq!(proc.sql_statements().len(), NUM_STATEMENTS);
     proc.write_to_file(DES_SER_FILE_COMP).expect("to write comp file");
-    
     assert_eq!(read_file_into_string(DES_SER_FILE), read_file_into_string(DES_SER_FILE_COMP))
 }

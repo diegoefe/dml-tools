@@ -1,7 +1,8 @@
 //! A library for DML generation from code or YAML files
 
-mod gen;
-pub use gen::Processor;
+mod tools;
+pub use tools::Processor;
+pub use tools::Loader;
 
 /// TypeWriters
 ///

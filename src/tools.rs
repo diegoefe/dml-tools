@@ -1,9 +1,10 @@
 use crate::sql::{DBObject, TypeWriter};
 use crate::type_writers::Postgresql;
-use crate::util::write_yaml_to_file;
+use crate::util::{write_yaml_to_file, read_yaml_from_file};
 use std::error::Error;
 
-pub type BxTypeWriter = Box<dyn TypeWriter>;
+type BxTypeWriter = Box<dyn TypeWriter>;
+type Objects = Vec<Box<dyn DBObject>>;
 
 /// DML processor and SQL generator
 ///
@@ -28,7 +29,7 @@ impl <'a> Processor<'a> {
         }
     }
     /// Create a new Processor optionally specifying a TypeWriter to use
-    pub fn new_with_objects(objects:&'a Vec<Box<dyn DBObject>>, type_writer:Option<BxTypeWriter>) -> Self {
+    pub fn new_with_objects(objects:&'a Objects, type_writer:Option<BxTypeWriter>) -> Self {
         let mut me = Processor::new(type_writer);
         for obj in objects.iter() {
             me.objs.push(Box::new(obj.as_ref()))
@@ -59,5 +60,25 @@ impl <'a> Processor<'a> {
     /// Write objects to a YAML file
     pub fn write_to_file(&self, file_name:&str) -> Result<(), Box<dyn Error>> {
         Ok(write_yaml_to_file(file_name, &self.objs)?)
+    }
+}
+
+
+/// DML yaml loader
+///
+/// Loads DBObject's from a .yaml file and permits accesing them
+/// Used for giving scope to Processor
+pub struct Loader {
+    objs: Objects,
+}
+
+impl Loader {
+    pub fn new(file_name:&str) -> Result<Self, Box<dyn Error>> {
+        Ok(Loader {
+            objs: read_yaml_from_file(file_name).expect(format!("To load objects from '{file_name}'").as_str())
+        })
+    }
+    pub fn objects(&self) -> &Objects {
+        &self.objs
     }
 }
