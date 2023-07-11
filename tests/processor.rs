@@ -6,6 +6,14 @@ use dml_tools::util::*;
 
 use dml_tools::macros::*;
 
+macro_rules! des_ser_base {
+    () => { "local-proc-objs" };
+}
+
+const DES_SER_FILE: &str = concat!(des_ser_base!(), ".yaml");
+const DES_SER_FILE_COMP: &str = concat!(des_ser_base!(), "_comp.yaml");
+const NUM_STATEMENTS: usize = 18;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MyRoles {
     pub rw: String,
@@ -31,8 +39,9 @@ macro_rules! grant_perms {
     }
 }    
 
+// WARNING: tests get runned in alphabetic order!
 #[test]
-fn test_processor() {
+fn test_processor_from_code() {
     let mut proc = Processor::new(Some(Box::new(Postgresql{})));
     assert_eq!(proc.sql_statements().len(), 0);
     let roles = MyRoles::default();
@@ -77,6 +86,7 @@ fn test_processor() {
         Field::new("questionnaire_id", &FieldAttributes::new_nn(FieldType::Txt)),
         Field::new("date_created", &FieldAttributes::new_nn(FieldType::Txt)),
         Field::new("date_updated", &FieldAttributes::new_nn(FieldType::Txt)),
+        Field::new("otro", &FieldAttributes::new_meta(FieldType::Int, "4")),
     ];
     // println!("{c_fields:#?}");
     let t_cache = Table::new(&ObjectPath::new_table(&my_schema, "cache"), c_fields);
@@ -88,6 +98,21 @@ fn test_processor() {
     grant_perms!(&mut proc, &roles, &o_seq);
     // println!("{}", proc.to_string());
     assert_eq!(proc.to_string(), read_file_into_string("tests/fixtures/proc.sql"));
-    assert_eq!(proc.sql_statements().len(), 18);
+    assert_eq!(proc.sql_statements().len(), NUM_STATEMENTS);
 
+    proc.write_to_file(DES_SER_FILE).expect("to write proc to file");
+
+}
+
+#[test]
+fn test_processor_from_file() {
+    let data = read_file_into_string(DES_SER_FILE);
+    // println!("{data}");
+    let objs : Vec<Box<dyn DBObject>> = serde_yaml::from_str(&data).expect("To parse yaml");
+    // println!("Objs: {objs:#?}");
+    let proc = Processor::new_with_objects(&objs, None);
+    assert_eq!(proc.sql_statements().len(), NUM_STATEMENTS);
+    proc.write_to_file(DES_SER_FILE_COMP).expect("to write comp file");
+    
+    assert_eq!(read_file_into_string(DES_SER_FILE), read_file_into_string(DES_SER_FILE_COMP))
 }

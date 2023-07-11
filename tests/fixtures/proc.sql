@@ -33,6 +33,7 @@ CREATE TABLE my_schema.cache (
   questionnaire_id text NOT NULL,
   date_created text NOT NULL,
   date_updated text NOT NULL,
+  otro int NULL,
   CONSTRAINT cache_workspace_survey_id_pk PRIMARY KEY (workspace,survey_id)
 );
 ALTER TABLE my_schema.cache OWNER TO rw_user;
