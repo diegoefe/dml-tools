@@ -6,4 +6,6 @@ echo "Running rust tests"
 cargo test -- --nocapture --test-threads=1
 
 # examples
-cargo run --example gen-dmls
+cargo run --example read-file-plus-code-dml-generation
+cargo run --example read-yaml
+cargo run --example generate-dmls
