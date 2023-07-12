@@ -9,7 +9,7 @@ readme = "README.md"
 homepage = "https://github.com/diegoefe/dml-tools"
 repository = "https://github.com/diegoefe/dml-tools"
 categories = ["database"]
-keywords = ["database", "sql", "mysql", "postgres", "sqlite", "dml", "generator"]
+keywords = ["database", "sql", "dml", "generator"]
 rust-version = "1.62" # typetag requires this mininum version!
 
 [dependencies]
