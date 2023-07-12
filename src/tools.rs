@@ -2,6 +2,8 @@ use crate::sql::{DBObject, TypeWriter};
 use crate::type_writers::Postgresql;
 use crate::util::{write_yaml_to_file, read_yaml_from_file};
 use std::error::Error;
+use std::fs::File;
+use std::io::prelude::*;
 
 type BxTypeWriter = Box<dyn TypeWriter>;
 type Objects = Vec<Box<dyn DBObject>>;
@@ -41,10 +43,6 @@ impl <'a> Processor<'a> {
         self.objs.push(Box::new(object));
         self
     }
-    pub fn add_all(&mut self, object:&'a dyn DBObject) -> &Self {
-        self.objs.push(Box::new(object));
-        self
-    }
     /// Get the list of serialized SQL sql_statements
     pub fn sql_statements(&self) -> Vec<String> {
         let mut out = Vec::new();
@@ -54,16 +52,22 @@ impl <'a> Processor<'a> {
         out
     }
     /// Get a String with all of the SQL statments
-    pub fn to_string(&self) -> String {
+    pub fn join_sql_statements(&self) -> String {
         self.sql_statements().join("\n")
     }
     /// Write objects to a YAML file
-    pub fn write_to_file(&self, file_name:&str) -> Result<(), Box<dyn Error>> {
+    pub fn serialize_to_yaml_file(&self, file_name:&str) -> Result<(), Box<dyn Error>> {
         Ok(write_yaml_to_file(file_name, &self.objs)?)
     }
+    /// Write generated SQL to file
+    pub fn write_to_sql_file(&self, file_name:&str) -> Result<(), Box<dyn Error>> {
+        let sqls = self.join_sql_statements();
+        let mut fh = File::create(file_name)?;
+        Ok(fh.write_all(&sqls.as_bytes())?)
+    }
     /// Get number of objects present
-    pub fn num_objects(&self) -> usize {
-        self.objs.len()
+    pub fn objects(&self) -> &Vec<Box<&'a dyn DBObject>> {
+        &self.objs
     }
 }
 

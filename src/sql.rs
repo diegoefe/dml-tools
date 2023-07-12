@@ -191,6 +191,7 @@ impl Field {
 #[typetag::serde]
 impl DBObject for Field {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        // TODO: escape all SQL reserved words
         let mut s = match self.name.as_str() {
             "role"=>format!("\"role\""),
             _=>self.name.to_owned(),

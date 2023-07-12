@@ -234,7 +234,7 @@ fn main() {
         roles: MyRoles::default(),
         fields_file: "tests/fixtures/test-tables.yaml".to_owned()
     };
-    let processor = gen_ddls(&spec);
-    debug!("Generated: {processor:#?}");
+    let dlls = gen_ddls(&spec);
+    debug!("Generated: {dlls:#?}");
     print_ddls(&spec);    
 }

@@ -33,13 +33,14 @@ fn test_deserialization() {
     let loader = Loader::new(SER_FILE).unwrap();
     let proc = Processor::new_with_objects(loader.objects(), None);
 
-    assert_eq!(proc.num_objects(),loader.objects().len());
-    assert_eq!(proc.num_objects(), 8);
+    let num_proc_objects = proc.objects().len();
+    assert_eq!(num_proc_objects,loader.objects().len());
+    assert_eq!(num_proc_objects, 8);
     
     // proc.add(&index);
     // proc.add(&uk);
     // proc.add(&pk);
     // proc.add(&fk);
-    // proc.write_to_file("local-serialized.yaml").expect("to write comp file");
+    // proc.serialize_to_yaml_file("local-serialized.yaml").expect("to write comp file");
 
 }
