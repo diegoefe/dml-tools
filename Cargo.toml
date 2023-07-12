@@ -1,10 +1,10 @@
 [package]
 name = "dml-tools"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Diego Florio <diegoefe@gmail.com>"]
 license = "MIT"
-description = "A library for DML generation from code or YAML files"
+description = "A library for DML generation and serialization from/to code or YAML files"
 readme = "README.md"
 homepage = "https://github.com/diegoefe/dml-tools"
 repository = "https://github.com/diegoefe/dml-tools"
