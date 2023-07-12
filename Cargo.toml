@@ -1,6 +1,6 @@
 [package]
 name = "dml-tools"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Diego Florio <diegoefe@gmail.com>"]
 license = "MIT"
@@ -31,4 +31,3 @@ path = "src/lib.rs"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
-# cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples=examples"]
