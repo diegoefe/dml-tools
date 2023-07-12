@@ -42,9 +42,7 @@ macro_rules! grant_perms {
     }
 }    
 
-// WARNING: tests get runned in alphabetic order!
-#[test]
-fn test_processor_from_code() {
+fn generate_from_code() -> Vec<String> {
     let mut proc = Processor::new(Some(Box::new(Postgresql{})));
     assert_eq!(proc.objects().len(), 0);
     let roles = MyRoles::default();
@@ -52,7 +50,7 @@ fn test_processor_from_code() {
     let schema = Schema::new(&my_schema, &roles.rw);
     proc.add(&schema);
     let oschema = ObjectPath::new_schema(&schema.name);
-  
+    
     // add_grant!(proc, g, GrantType::Usage, &roles.rw, &oschema);
     add_grant!(proc, GrantType::All, &roles.rw, &oschema);
     add_grant!(proc, GrantType::Usage, &roles.upd, &oschema);
@@ -99,16 +97,23 @@ fn test_processor_from_code() {
 
     let o_seq = ObjectPath::new_sequence(&my_schema, "asignaciones_cache_id_seq");
     grant_perms!(&mut proc, &roles, &o_seq);
-    // println!("{}", proc.join_sql_statements());
-    assert_eq!(proc.join_sql_statements(), read_file_into_string("tests/fixtures/proc.sql"));
-    assert_eq!(proc.objects().len(), NUM_STATEMENTS);
-
     proc.serialize_to_yaml_file(DES_SER_FILE).expect("to write proc to file");
 
+    proc.sql_statements()
+
+}
+
+// WARNING: tests get runned in alphabetic order!
+#[test]
+fn test_processor_from_code() {
+    let sqls = generate_from_code();
+    assert_eq!(sqls.join("\n"), read_file_into_string("tests/fixtures/proc.sql"));
+    assert_eq!(sqls.len(), NUM_STATEMENTS);
 }
 
 #[test]
 fn test_processor_from_file() {
+    _ = generate_from_code();
     let loader = Loader::new(DES_SER_FILE).unwrap();
     let proc = Processor::new_with_objects(loader.objects(), None);
     assert_eq!(proc.objects().len(), NUM_STATEMENTS);
