@@ -15,11 +15,28 @@ See [examples](https://github.com/diegoefe/dml-tools/tree/main/examples) for usa
 dml-tools = "0.1"
 ```
 
-
 ## Usage
+To obtain this DML (Data Manipulation Language) definitions:
+  ```sql
+  CREATE SCHEMA my_schema AUTHORIZATION rw_user;
+  CREATE TABLE my_schema.users (
+    workspace text NULL,
+    user_id text NULL,
+    user_name text NULL,
+    full_name text NULL,
+    "role" text NULL,
+    is_locked text NULL,
+    email text NULL,
+    is_locked_by_supervisor text NULL
+  );
+  ALTER TABLE schema1.my_table
+    ADD CONSTRAINT my_table_my_reftable_field1_field2_fk
+    FOREIGN KEY (field1,field2)
+    REFERENCES schema1.my_reftable (rfield1,rfield2)
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+  ```
 
-### Deserialization
-  To read DML (Data Manipulation Language) definitions from a .yaml file, such as:
+One can either, load it from this YAML file:
   ```yaml
   - tag: Schema
     name: my_schema
@@ -75,7 +92,8 @@ dml-tools = "0.1"
     on_delete: Restrict
     on_update: Cascade
   ```
-  You can load it with:
+  
+  with this code:
   ```rust
   use dml_tools::Loader;
   use dml_tools::Processor;
@@ -91,28 +109,8 @@ dml-tools = "0.1"
       Ok(())
   }
   ```
-  and generate:
-  ```sql
-  CREATE SCHEMA my_schema AUTHORIZATION rw_user;
-  CREATE TABLE my_schema.users (
-    workspace text NULL,
-    user_id text NULL,
-    user_name text NULL,
-    full_name text NULL,
-    "role" text NULL,
-    is_locked text NULL,
-    email text NULL,
-    is_locked_by_supervisor text NULL
-  );
-  ALTER TABLE schema1.my_table
-    ADD CONSTRAINT my_table_my_reftable_field1_field2_fk
-    FOREIGN KEY (field1,field2)
-    REFERENCES schema1.my_reftable (rfield1,rfield2)
-    ON DELETE RESTRICT ON UPDATE CASCADE;
-  ```
-
-### Generation
-  To generate DML definitions with code you can write:
+  
+  Or, generate it with this code:
   ```rust
   use dml_tools::sql::*;
   use dml_tools::Processor;
@@ -170,30 +168,10 @@ dml-tools = "0.1"
     processor.add(&t_users);
     grant_perms!(&mut processor, roles, &t_users.path);
 
-    processor.serialize_to_yaml_file("local-dmls.sql")?;
+    processor.serialize_to_yaml_file("my-generated.sql")?;
 
     Ok(())
   }
-  ```
-  and this is the resulting file:
-  ```sql
-  CREATE SCHEMA my_schema AUTHORIZATION rw_user;
-  CREATE TABLE my_schema.users (
-    workspace text NULL,
-    user_id text NULL,
-    user_name text NULL,
-    full_name text NULL,
-    "role" text NULL,
-    is_locked text NULL,
-    email text NULL,
-    is_locked_by_supervisor text NULL
-  );
-  ALTER TABLE schema1.my_table
-    ADD CONSTRAINT my_table_my_reftable_field1_field2_fk
-    FOREIGN KEY (field1,field2)
-    REFERENCES schema1.my_reftable (rfield1,rfield2)
-    ON DELETE RESTRICT ON UPDATE CASCADE;
-  ```
 
 ## License
 
