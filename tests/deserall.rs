@@ -30,7 +30,7 @@ fn test_deserialization() {
     };
 */
 
-    let loader = Loader::new(SER_FILE).unwrap();
+    let loader = Loader::new_from_file(SER_FILE).unwrap();
     let proc = Processor::new_with_objects(loader.objects(), None);
 
     let num_proc_objects = proc.objects().len();

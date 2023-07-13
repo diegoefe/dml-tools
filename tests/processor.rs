@@ -114,7 +114,7 @@ fn test_processor_from_code() {
 #[test]
 fn test_processor_from_file() {
     _ = generate_from_code();
-    let loader = Loader::new(DES_SER_FILE).unwrap();
+    let loader = Loader::new_from_file(DES_SER_FILE).unwrap();
     let proc = Processor::new_with_objects(loader.objects(), None);
     assert_eq!(proc.objects().len(), NUM_STATEMENTS);
     proc.serialize_to_yaml_file(DES_SER_FILE_COMP).expect("to write comp file");

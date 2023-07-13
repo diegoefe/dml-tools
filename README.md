@@ -21,59 +21,59 @@ dml-tools = "0.1"
 ### Deserialization
   To read DML (Data Manipulation Language) definitions from a .yaml file, such as:
   ```yaml
-    - tag: Schema
-      name: my_schema
-      owner: rw_user
-    - tag: Table
-      path:
-       schema: my_schema
-       name: users
-       otype: Table
-      fields:
-      - name: workspace
-       attributes:
-        unique: true
-        primary_key: true
-      - name: user_id
-       attributes:
-        empty: false
-        primary_key: true
-      - name: user_name
-       attributes:
-        unique: true
-      - name: full_name
-       attributes: {}
-      - name: role
-       attributes:
-        empty: false
-      - name: is_locked
-       attributes:
-        type: bool
-        empty: false
-      - name: email
-       attributes: {}
-      - name: is_locked_by_supervisor
-       attributes:
-        type: bool
-        empty: false
-        defval: 'false'
-    - tag: ForeignKey
-      table:
-       schema: schema1
-       name: my_table
-       otype: Table
-      fields:
-      - field1
-      - field2
-      ref_table:
-       schema: schema1
-       name: my_reftable
-       otype: Table
-      ref_fields:
-      - rfield1
-      - rfield2
-      on_delete: Restrict
-      on_update: Cascade
+  - tag: Schema
+    name: my_schema
+    owner: rw_user
+  - tag: Table
+    path:
+      schema: my_schema
+      name: users
+      otype: Table
+    fields:
+    - name: workspace
+      attributes:
+      unique: true
+      primary_key: true
+    - name: user_id
+      attributes:
+      empty: false
+      primary_key: true
+    - name: user_name
+      attributes:
+      unique: true
+    - name: full_name
+      attributes: {}
+    - name: role
+      attributes:
+      empty: false
+    - name: is_locked
+      attributes:
+      type: bool
+      empty: false
+    - name: email
+      attributes: {}
+    - name: is_locked_by_supervisor
+      attributes:
+      type: bool
+      empty: false
+      defval: 'false'
+  - tag: ForeignKey
+    table:
+      schema: schema1
+      name: my_table
+      otype: Table
+    fields:
+    - field1
+    - field2
+    ref_table:
+      schema: schema1
+      name: my_reftable
+      otype: Table
+    ref_fields:
+    - rfield1
+    - rfield2
+    on_delete: Restrict
+    on_update: Cascade
   ```
   You can load it with:
   ```rust

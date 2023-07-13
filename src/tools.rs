@@ -1,6 +1,6 @@
 use crate::sql::{DBObject, TypeWriter};
 use crate::type_writers::Postgresql;
-use crate::util::{write_yaml_to_file, read_yaml_from_file};
+use crate::util::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
@@ -81,7 +81,14 @@ pub struct Loader {
 }
 
 impl Loader {
-    pub fn new(file_name:&str) -> Result<Self, Box<dyn Error>> {
+    /// Create Loader from YAML in a String
+    pub fn new(data:&str) -> Result<Self, Box<dyn Error>> {
+        Ok(Loader {
+            objs: read_yaml_from_string(data).expect(format!("To load objects from string '{data}'").as_str())
+        })
+    }
+    /// Create Loader reading from a YAML file
+    pub fn new_from_file(file_name:&str) -> Result<Self, Box<dyn Error>> {
         Ok(Loader {
             objs: read_yaml_from_file(file_name).expect(format!("To load objects from '{file_name}'").as_str())
         })
