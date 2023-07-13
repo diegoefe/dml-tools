@@ -172,6 +172,7 @@ One can either, load it from this YAML file:
 
     Ok(())
   }
+```
 
 ## License
 
