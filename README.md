@@ -98,8 +98,6 @@ One can either, load it from this YAML file:
   use dml_tools::Loader;
   use dml_tools::Processor;
   use std::error::Error;
-  use std::fs::File;
-  use std::io::prelude::*;
 
   fn main() -> Result<(), Box<dyn Error>> {
       let loader = Loader::new("examples/my-dmls.yaml")?;
