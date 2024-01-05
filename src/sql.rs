@@ -9,6 +9,13 @@ use linked_hash_map::LinkedHashMap;
 /// Trait for a type that can convert a FieldType to String
 pub trait TypeWriter {
     fn field_to_sql(&self, field_type:&FieldType) -> String;
+    fn schema_to_sql(&self, op:&ObjectPath) -> String {
+        if let Some(schema) = &op.schema {
+            format!("{}.{}", schema, op.name)
+        } else {
+            op.name.to_owned()
+        }
+    }
 }
 
 /// Trait for serializing a database object to as String
@@ -261,8 +268,8 @@ impl Grant {
 }
 #[typetag::serde]
 impl DBObject for Grant {
-    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
-        format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), self.on.full_name(), self.to)
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), type_writer.schema_to_sql(&self.on), self.to)
     }
 }
 
@@ -280,8 +287,8 @@ impl Owner {
 }
 #[typetag::serde]
 impl DBObject for Owner {
-    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
-        format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), self.of.full_name(), self.to)
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), type_writer.schema_to_sql(&self.of), self.to)
     }
 }
 
@@ -301,9 +308,9 @@ impl Index {
 }
 #[typetag::serde]
 impl DBObject for Index {
-    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         format!("CREATE INDEX {}_{}_idx ON {} USING btree ({});",
-                self.table.name, self.fields.join("_"), self.table.full_name(),
+                self.table.name, self.fields.join("_"), type_writer.schema_to_sql(&self.table),
                 self.fields.join(","))
     }
 }
@@ -369,12 +376,12 @@ pub struct ForeignKey {
 }
 #[typetag::serde]
 impl DBObject for ForeignKey {
-    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         format!("ALTER TABLE {}\n  ADD CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
-                self.table.full_name(),
+                type_writer.schema_to_sql(&self.table),
                 self.table.name, self.ref_table.name, self.fields.join("_"),
                 self.fields.join(","),
-                self.ref_table.full_name(),
+                type_writer.schema_to_sql(&self.ref_table),
                 self.ref_fields.join(","),
                 self.on_delete.to_string(),
                 self.on_update.to_string()
@@ -500,7 +507,7 @@ impl DBObject for Table {
             cts.push(Box::new(UniqueKey{ name: format!("{}_{}", self.path.name, uks.join("_")), fields:uks}))
         }
         let refs : Vec<String> = cts.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
-        let mut t=format!("CREATE TABLE {} (\n  {}", self.path.full_name(), cols.join(",\n  "));
+        let mut t=format!("CREATE TABLE {} (\n  {}", type_writer.schema_to_sql(&self.path), cols.join(",\n  "));
         if ! refs.is_empty() {
             t += format!(",\n  {}", refs.join(",\n  ")).as_str()
         }

@@ -1,4 +1,4 @@
-CREATE TABLE myschema.mytable (
+CREATE TABLE mytable (
   id autoincrement NOT NULL,
   age integer NULL,
   year_of_birth integer NULL,

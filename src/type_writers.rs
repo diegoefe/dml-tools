@@ -1,4 +1,4 @@
-use crate::sql::{TypeWriter, FieldType};
+use crate::sql::{TypeWriter, FieldType, ObjectPath};
 
 /// PostgreSQL type serializator
 #[derive(Debug)]
@@ -45,5 +45,8 @@ impl TypeWriter for Sqlite {
             FieldType::Dbl => "real".to_owned(),
             FieldType::AutoInc => "autoincrement".to_owned(),
         }
+    }
+    fn schema_to_sql(&self, op:&ObjectPath) -> String {
+        op.name.to_owned()
     }
 }
