@@ -1,6 +1,6 @@
 [package]
 name = "dml-tools"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["Diego Florio <diegoefe@gmail.com>"]
 license = "MIT"
