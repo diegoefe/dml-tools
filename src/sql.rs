@@ -8,7 +8,7 @@ use linked_hash_map::LinkedHashMap;
 
 /// Trait for a type that can convert a FieldType to String
 pub trait TypeWriter {
-    fn type_to_sql(&self, field_type:&FieldType) -> String;
+    fn field_to_sql(&self, field_type:&FieldType) -> String;
 }
 
 /// Trait for serializing a database object to as String
@@ -62,7 +62,7 @@ pub enum FieldType {
 #[typetag::serde]
 impl DBObject for FieldType {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
-        type_writer.type_to_sql(&self)
+        type_writer.field_to_sql(&self)
     }
 }
 
