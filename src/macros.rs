@@ -30,7 +30,18 @@ macro_rules! add_index {
     }
 }
 
+#[macro_export]
+macro_rules! grant_perms {
+    ($proc:expr, $roles:expr, $opath:expr) => {
+        add_owner!($proc, &($roles).rw, $opath);
+        add_grant!($proc, GrantType::All, &($roles).rw, $opath);
+        add_grant!($proc, GrantType::All, &($roles).upd, $opath);
+        add_grant!($proc, GrantType::Select, &($roles).ro, $opath);
+    }
+}  
+
 pub use add_to_proc;
 pub use add_grant;
 pub use add_owner;
 pub use add_index;
+pub use grant_perms;

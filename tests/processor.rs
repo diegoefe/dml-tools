@@ -33,15 +33,6 @@ impl Default for MyRoles {
     }
 }
 
-macro_rules! grant_perms {
-    ($proc:expr, $roles:expr, $opath:expr) => {
-        add_owner!($proc, &($roles).rw, $opath);
-        add_grant!($proc, GrantType::All, &($roles).rw, $opath);
-        add_grant!($proc, GrantType::All, &($roles).upd, $opath);
-        add_grant!($proc, GrantType::Select, &($roles).ro, $opath);
-    }
-}    
-
 fn generate_from_code() -> Vec<String> {
     let mut proc = Processor::new(Some(Box::new(Postgresql{})));
     assert_eq!(proc.objects().len(), 0);

@@ -18,15 +18,6 @@ impl Default for MyRoles {
     }
 }
 
-macro_rules! grant_perms {
-    ($proc:expr, $roles:expr, $opath:expr) => {
-        add_owner!($proc, &($roles).rw, $opath);
-        add_grant!($proc, GrantType::All, &($roles).rw, $opath);
-        add_grant!($proc, GrantType::All, &($roles).upd, $opath);
-        add_grant!($proc, GrantType::Select, &($roles).ro, $opath);
-    }
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
     let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Mysql{})));
 
