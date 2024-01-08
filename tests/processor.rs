@@ -2,7 +2,7 @@ use std::fs::remove_file;
 
 use dml_tools::Loader;
 use dml_tools::Processor;
-use dml_tools::type_writers::Postgresql;
+use dml_tools::type_writers::*;
 use dml_tools::sql::*;
 use serde::{Deserialize, Serialize};
 use dml_tools::util::*;
@@ -33,8 +33,10 @@ impl Default for MyRoles {
     }
 }
 
-fn generate_from_code() -> Vec<String> {
-    let mut proc = Processor::new(Some(Box::new(Postgresql{})));
+type BxTypeWriter = Box<dyn TypeWriter>;
+
+fn generate_from_code(type_writer:Option<BxTypeWriter>) -> Vec<String> {
+    let mut proc = Processor::new(type_writer);
     assert_eq!(proc.objects().len(), 0);
     let roles = MyRoles::default();
     let my_schema = String::from("my_schema");
@@ -94,17 +96,41 @@ fn generate_from_code() -> Vec<String> {
 
 }
 
+// Some(Box::new(Postgresql{}))
+fn check_processor_from_code(type_writer:BxTypeWriter) {
+    let sqlfile = format!("tests/fixtures/proc_{}.sql", type_writer.as_ref().id());
+    // println!("Proc SQL file [{sqlfile}]");
+    let pstr = read_file_into_string(&sqlfile);
+    let sqls = generate_from_code(Some(type_writer));
+    assert_eq!(sqls.join("\n"), pstr);
+    assert_eq!(sqls.len(), NUM_STATEMENTS);
+    let psqls:Vec<&str> = pstr.split(";").filter(|s| ! s.is_empty()).collect();
+    // println!("{psqls:#?}");
+    assert_eq!(psqls.len(), NUM_STATEMENTS);
+    for (i, sql) in sqls.iter().enumerate() {
+        assert_eq!(sql, format!("{};", psqls[i].trim()).as_str())
+    }
+}
+
 // WARNING: tests get runned in alphabetic order!
 #[test]
-fn test_processor_from_code() {
-    let sqls = generate_from_code();
-    assert_eq!(sqls.join("\n"), read_file_into_string("tests/fixtures/proc.sql"));
-    assert_eq!(sqls.len(), NUM_STATEMENTS);
+fn test_processor_from_code_mysql() {
+    check_processor_from_code(Box::new(Mysql{}))
+}
+
+#[test]
+fn test_processor_from_code_sqlite() {
+    check_processor_from_code(Box::new(Sqlite{}))
+}
+
+#[test]
+fn test_processor_from_code_pgsql() {
+    check_processor_from_code(Box::new(Postgresql{}))
 }
 
 #[test]
 fn test_processor_from_file() {
-    _ = generate_from_code();
+    _ = generate_from_code(None);
     let loader = Loader::new_from_file(DES_SER_FILE).unwrap();
     let proc = Processor::new_with_objects(loader.objects(), None);
     assert_eq!(proc.objects().len(), NUM_STATEMENTS);

@@ -4,6 +4,7 @@ use crate::sql::{TypeWriter, FieldType, ObjectPath};
 #[derive(Debug)]
 pub struct Postgresql {}
 impl TypeWriter for Postgresql {
+    fn id(&self) -> &str { "pgsql" }
     fn field_type(&self, field_type:&FieldType) -> String {
         match field_type {
             FieldType::Int => "int".to_owned(),
@@ -20,6 +21,7 @@ impl TypeWriter for Postgresql {
 #[derive(Debug)]
 pub struct Mysql {}
 impl TypeWriter for Mysql {
+    fn id(&self) -> &str { "mysql" }
     fn field_type(&self, field_type:&FieldType) -> String {
         match field_type {
             FieldType::Int => "int".to_owned(),
@@ -36,6 +38,7 @@ impl TypeWriter for Mysql {
 #[derive(Debug)]
 pub struct Sqlite {}
 impl TypeWriter for Sqlite {
+    fn id(&self) -> &str { "sqlite" }
     fn field_type(&self, field_type:&FieldType) -> String {
         match field_type {
             FieldType::Int => "integer".to_owned(),

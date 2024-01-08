@@ -8,6 +8,7 @@ use linked_hash_map::LinkedHashMap;
 
 /// Trait for a type that can convert a FieldType to String
 pub trait TypeWriter {
+    fn id(&self) -> &str;
     fn field_type(&self, field_type:&FieldType) -> String;
     fn schema(&self, op:&ObjectPath) -> String {
         if let Some(schema) = &op.schema {

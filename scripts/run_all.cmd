@@ -1,7 +1,7 @@
 @echo off
 
 echo "Running rust tests"
-rem export RUST_TEST_THREADS=1
+set RUST_TEST_THREADS=1
 rem cargo test -- --nocapture --test-threads=1
 cargo test -- --nocapture
 
