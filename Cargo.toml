@@ -23,6 +23,7 @@ typetag = "0.2"
 
 [dev-dependencies]
 log = "0.4"
+regex = "1.10.2"
 
 [lib]
 name = "dml_tools"

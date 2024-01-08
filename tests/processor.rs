@@ -96,14 +96,17 @@ fn generate_from_code(type_writer:Option<BxTypeWriter>) -> Vec<String> {
 
 }
 
-// Some(Box::new(Postgresql{}))
 fn check_processor_from_code(type_writer:BxTypeWriter) {
     let id = type_writer.as_ref().id().to_owned();
     let sqlfile = format!("tests/fixtures/proc_{}.sql", id);
     // println!("Proc SQL file [{sqlfile}]");
     let pstr = read_file_into_string(&sqlfile);
     let sqls = generate_from_code(Some(type_writer));
-    assert_eq!(sqls.join("\n").trim_start(), pstr);
+    let re_mnl = regex::Regex::new(r"\n+").unwrap();
+    let rsqls = sqls.join("\n");
+    let sqlsj = re_mnl.replace_all(&rsqls, "\n");
+    // println!("sqlsj {sqlsj}");
+    assert_eq!(sqlsj.trim_start(), pstr);
     assert_eq!(sqls.len(), NUM_STATEMENTS);
     let psqls:Vec<&str> = pstr.split(";").filter(|s| ! s.is_empty()).collect();
     // println!("{psqls:#?}");
@@ -121,10 +124,10 @@ fn test_processor_from_code_mysql() {
     check_processor_from_code(Box::new(Mysql{}))
 }
 
-// #[test]
-// fn test_processor_from_code_sqlite() {
-//     check_processor_from_code(Box::new(Sqlite{}))
-// }
+#[test]
+fn test_processor_from_code_sqlite() {
+    check_processor_from_code(Box::new(Sqlite{}))
+}
 
 #[test]
 fn test_processor_from_code_pgsql() {
