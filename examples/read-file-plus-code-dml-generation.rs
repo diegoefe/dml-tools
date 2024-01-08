@@ -92,7 +92,8 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             let indexes;
             let mut fks=Vec::new();
             {
-                let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Sqlite{})));
+                // let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Sqlite{})));
+                let mut processor= Processor::new(None); // Postgres
                 // let mut processor= Processor::new(None);
                 debug!("spec: {spec:#?}");
                 debug!("fields: {fields:#?}");
