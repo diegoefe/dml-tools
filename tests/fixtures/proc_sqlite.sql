@@ -1,7 +1,3 @@
-CREATE SCHEMA my_schema AUTHORIZATION rw_user;
-GRANT ALL ON SCHEMA my_schema TO rw_user;
-GRANT USAGE ON SCHEMA my_schema TO upd_user;
-GRANT USAGE ON SCHEMA my_schema TO ro_user;
 CREATE TABLE users (
   workspace text NULL,
   is_archived integer NULL,
@@ -19,10 +15,6 @@ CREATE TABLE users (
   CONSTRAINT users_workspace_user_id_pk PRIMARY KEY (workspace,user_id),
   CONSTRAINT users_workspace_user_name_uk UNIQUE (workspace,user_name)
 );
-ALTER TABLE users OWNER TO rw_user;
-GRANT ALL ON TABLE users TO rw_user;
-GRANT ALL ON TABLE users TO upd_user;
-GRANT SELECT ON TABLE users TO ro_user;
 CREATE TABLE cache (
   id autoincrement NOT NULL,
   pk text NULL,
@@ -36,11 +28,3 @@ CREATE TABLE cache (
   otro integer NULL,
   CONSTRAINT cache_workspace_survey_id_pk PRIMARY KEY (workspace,survey_id)
 );
-ALTER TABLE cache OWNER TO rw_user;
-GRANT ALL ON TABLE cache TO rw_user;
-GRANT ALL ON TABLE cache TO upd_user;
-GRANT SELECT ON TABLE cache TO ro_user;
-ALTER SEQUENCE asignaciones_cache_id_seq OWNER TO rw_user;
-GRANT ALL ON SEQUENCE asignaciones_cache_id_seq TO rw_user;
-GRANT ALL ON SEQUENCE asignaciones_cache_id_seq TO upd_user;
-GRANT SELECT ON SEQUENCE asignaciones_cache_id_seq TO ro_user;

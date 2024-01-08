@@ -17,9 +17,9 @@ pub trait TypeWriter {
             op.name.to_owned()
         }
     }
-    fn index_type(&self) -> String {
-        " USING btree".to_string()
-    }
+    fn index_type(&self) -> String { " USING btree".to_string() }
+    fn supports_schemas(&self) -> bool { true }
+    fn supports_permissions(&self) -> bool { true }
 }
 
 /// Trait for serializing a database object to as String
@@ -273,7 +273,11 @@ impl Grant {
 #[typetag::serde]
 impl DBObject for Grant {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
-        format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), type_writer.schema(&self.on), self.to)
+        if type_writer.supports_permissions() {
+            format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), type_writer.schema(&self.on), self.to)
+        } else {
+            "".to_owned()
+        }
     }
 }
 
@@ -292,7 +296,11 @@ impl Owner {
 #[typetag::serde]
 impl DBObject for Owner {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
-        format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), type_writer.schema(&self.of), self.to)
+        if type_writer.supports_permissions() {
+            format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), type_writer.schema(&self.of), self.to)
+        } else {
+            "".to_owned()
+        }
     }
 }
 
@@ -537,8 +545,12 @@ impl Schema {
 }
 #[typetag::serde]
 impl DBObject for Schema {
-    fn to_sql(&self, _type_writer:&dyn TypeWriter) -> String {
-        format!("CREATE SCHEMA {} AUTHORIZATION {};", self.name, self.owner)
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        if type_writer.supports_schemas() {
+            format!("CREATE SCHEMA {} AUTHORIZATION {};", self.name, self.owner)
+        } else {
+            "".to_owned()
+        }
     }
 }
 

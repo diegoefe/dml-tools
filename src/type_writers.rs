@@ -52,7 +52,7 @@ impl TypeWriter for Sqlite {
     fn schema(&self, op:&ObjectPath) -> String {
         op.name.to_owned()
     }
-    fn index_type(&self) -> String {
-        "".to_string()
-    }
+    fn index_type(&self) -> String { "".to_string() }
+    fn supports_schemas(&self) -> bool { false }
+    fn supports_permissions(&self) -> bool { false }
 }
