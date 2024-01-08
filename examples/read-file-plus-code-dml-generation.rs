@@ -84,15 +84,6 @@ fn has_schema(spec:&MySpec, oschema:&Option<String>) -> bool {
     }
 }
 
-macro_rules! grant_perms {
-    ($proc:expr, $spec:expr, $opath:expr) => {
-        add_owner!($proc, &($spec).roles.rw, $opath);
-        add_grant!($proc, GrantType::All, &($spec).roles.rw, $opath);
-        add_grant!($proc, GrantType::All, &($spec).roles.upd, $opath);
-        add_grant!($proc, GrantType::Select, &($spec).roles.ro, $opath);
-    }
-}
-
 fn gen_ddls(spec:&MySpec) -> Vec<String> {
     let ff=&spec.fields_file;
     let mut sqls=Vec::new();
@@ -101,7 +92,7 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
             let indexes;
             let mut fks=Vec::new();
             {
-                let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Mysql{})));
+                let mut processor= Processor::new(Some(Box::new(dml_tools::type_writers::Sqlite{})));
                 // let mut processor= Processor::new(None);
                 debug!("spec: {spec:#?}");
                 debug!("fields: {fields:#?}");
@@ -135,7 +126,7 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                 let t_users = Table::new(&spec.path_table_users(), u_fields);
                 // println!("{}", t_users);
                 processor.add(&t_users);
-                grant_perms!(&mut processor, spec, &t_users.path);
+                grant_perms!(&mut processor, &spec.roles, &t_users.path);
     
                 let c_fields = vec![
                     Field::new("id", &FieldAttributes::new_nn(FieldType::AutoInc)),
@@ -152,10 +143,10 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                 let t_cache = Table::new(&spec.path_table_cache(), c_fields);
                 // println!("{}", t_cache);
                 processor.add(&t_cache);
-                grant_perms!(&mut processor, spec, &t_cache.path);
+                grant_perms!(&mut processor, &spec.roles, &t_cache.path);
     
                 let o_seq = ObjectPath::new_sequence(&spec.schema, "asignaciones_cache_id_seq");
-                grant_perms!(&mut processor, spec, &o_seq);
+                grant_perms!(&mut processor, &spec.roles, &o_seq);
     
                 // let (m_fields, a_fields) = get_basic_assign_table_fields(&spec);
                 let mut m_fields = vec![
@@ -188,7 +179,7 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                         processor.add(index);
                     }
                 }
-                grant_perms!(&mut processor, spec, &t_main.path);
+                grant_perms!(&mut processor, &spec.roles, &t_main.path);
     
                 if let Some(foreign_keys) = &a_fields.foreign_keys {
                     for fk in foreign_keys.iter() {

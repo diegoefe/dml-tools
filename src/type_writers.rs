@@ -4,7 +4,7 @@ use crate::sql::{TypeWriter, FieldType, ObjectPath};
 #[derive(Debug)]
 pub struct Postgresql {}
 impl TypeWriter for Postgresql {
-    fn field_to_sql(&self, field_type:&FieldType) -> String {
+    fn field_type(&self, field_type:&FieldType) -> String {
         match field_type {
             FieldType::Int => "int".to_owned(),
             FieldType::BigInt => "bigint".to_owned(),
@@ -20,7 +20,7 @@ impl TypeWriter for Postgresql {
 #[derive(Debug)]
 pub struct Mysql {}
 impl TypeWriter for Mysql {
-    fn field_to_sql(&self, field_type:&FieldType) -> String {
+    fn field_type(&self, field_type:&FieldType) -> String {
         match field_type {
             FieldType::Int => "int".to_owned(),
             FieldType::BigInt => "bigint".to_owned(),
@@ -36,7 +36,7 @@ impl TypeWriter for Mysql {
 #[derive(Debug)]
 pub struct Sqlite {}
 impl TypeWriter for Sqlite {
-    fn field_to_sql(&self, field_type:&FieldType) -> String {
+    fn field_type(&self, field_type:&FieldType) -> String {
         match field_type {
             FieldType::Int => "integer".to_owned(),
             FieldType::BigInt => "integer".to_owned(),
@@ -46,7 +46,10 @@ impl TypeWriter for Sqlite {
             FieldType::AutoInc => "autoincrement".to_owned(),
         }
     }
-    fn schema_to_sql(&self, op:&ObjectPath) -> String {
+    fn schema(&self, op:&ObjectPath) -> String {
         op.name.to_owned()
+    }
+    fn index_type(&self) -> String {
+        "".to_string()
     }
 }
