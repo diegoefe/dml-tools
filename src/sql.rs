@@ -20,6 +20,7 @@ pub trait TypeWriter {
     fn index_type(&self) -> String { " USING btree".to_string() }
     fn supports_schemas(&self) -> bool { true }
     fn supports_permissions(&self) -> bool { true }
+    fn supports_alter_table_add_pk(&self) -> bool { true }
 }
 
 /// Trait for serializing a database object to as String
@@ -27,6 +28,13 @@ pub trait TypeWriter {
 #[typetag::serde(tag = "tag")]
 pub trait DBObject : Debug {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
+    // if should_delay_generation() or is_delayed() MUST return Some(name)!
+    fn name(&self) -> Option<&str> { None }
+    fn should_delay_generation(&self, _type_writer:&dyn TypeWriter) -> bool { false }
+    fn is_delayed(&self, _type_writer:&dyn TypeWriter) -> bool { false }
+    fn delayed_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: Vec<Box<& dyn DBObject>>) -> String {
+        panic!("should not run a non-reimplemented delayed_to_sql()!")
+    }
 }
 
 fn default_false() -> bool {
@@ -392,8 +400,12 @@ pub struct ForeignKey {
 #[typetag::serde]
 impl DBObject for ForeignKey {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
-        format!("ALTER TABLE {}\n  ADD CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
-                type_writer.schema(&self.table),
+        let prefix = if self.is_delayed(type_writer) {
+            "".to_string()
+        } else {
+            format!("ALTER TABLE {}\n  ADD ", type_writer.schema(&self.table))
+        };
+        format!("{prefix}CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
                 self.table.name, self.ref_table.name, self.fields.join("_"),
                 self.fields.join(","),
                 type_writer.schema(&self.ref_table),
@@ -401,6 +413,10 @@ impl DBObject for ForeignKey {
                 self.on_delete.to_string(),
                 self.on_update.to_string()
         )
+    }
+    fn name(&self) -> Option<&str> { Some(&self.table.name) }
+    fn is_delayed(&self, type_writer:&dyn TypeWriter) -> bool {
+        ! type_writer.supports_alter_table_add_pk()
     }
 }
 
@@ -528,6 +544,14 @@ impl DBObject for Table {
         }
         t += "\n);";
         t
+    }
+    fn name(&self) -> Option<&str> { Some(&self.path.name) }
+    fn should_delay_generation(&self, type_writer:&dyn TypeWriter) -> bool {
+        ! type_writer.supports_alter_table_add_pk()
+    }
+    fn delayed_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: Vec<Box<& dyn DBObject>>) -> String {
+        // TODO: add a ForeignKey to self.fields for each _delayed object
+        panic!("should not run a non-reimplemented delayed_to_sql()!")
     }
 }
 
