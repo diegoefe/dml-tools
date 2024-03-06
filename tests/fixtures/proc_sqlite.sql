@@ -16,7 +16,7 @@ CREATE TABLE users (
   CONSTRAINT users_workspace_user_name_uk UNIQUE (workspace,user_name)
 );
 CREATE TABLE cache (
-  id autoincrement NOT NULL,
+  id integer primary key autoincrement NOT NULL,
   pk text NULL,
   responsible text NOT NULL,
   responsible_id text NOT NULL,

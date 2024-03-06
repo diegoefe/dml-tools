@@ -46,7 +46,7 @@ impl TypeWriter for Sqlite {
             FieldType::Txt => "text".to_owned(),
             FieldType::Bool => "integer".to_owned(),
             FieldType::Dbl => "real".to_owned(),
-            FieldType::AutoInc => "autoincrement".to_owned(),
+            FieldType::AutoInc => "integer primary key autoincrement".to_owned(),
         }
     }
     fn schema(&self, op:&ObjectPath) -> String {
