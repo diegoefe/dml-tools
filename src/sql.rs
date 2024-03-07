@@ -21,6 +21,7 @@ pub trait TypeWriter {
     fn supports_schemas(&self) -> bool { true }
     fn supports_permissions(&self) -> bool { true }
     fn supports_alter_table_add_pk(&self) -> bool { true }
+    fn supports_sequences(&self) -> bool { false }
 }
 
 /// Trait for serializing a database object to as String
@@ -281,11 +282,13 @@ impl Grant {
 #[typetag::serde]
 impl DBObject for Grant {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        let mut rv = "".to_owned();
         if type_writer.supports_permissions() {
-            format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), type_writer.schema(&self.on), self.to)
-        } else {
-            "".to_owned()
+            if self.on.otype != ObjectType::Sequence || type_writer.supports_sequences() {
+                rv = format!("GRANT {} ON {} {} TO {};", self.permission.to_string(), self.on.otype.to_string(), type_writer.schema(&self.on), self.to)
+            }
         }
+        rv
     }
 }
 
@@ -304,11 +307,13 @@ impl Owner {
 #[typetag::serde]
 impl DBObject for Owner {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        let mut rv = "".to_owned();
         if type_writer.supports_permissions() {
-            format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), type_writer.schema(&self.of), self.to)
-        } else {
-            "".to_owned()
+            if self.of.otype != ObjectType::Sequence || type_writer.supports_sequences() {
+                rv = format!("ALTER {} {} OWNER TO {};", self.of.otype.to_string(), type_writer.schema(&self.of), self.to)
+            }
         }
+        rv
     }
 }
 
@@ -421,7 +426,7 @@ impl DBObject for ForeignKey {
 }
 
 /// Types of upper-level objects
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ObjectType {
     Table,
     Sequence,

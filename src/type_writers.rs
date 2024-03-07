@@ -15,6 +15,7 @@ impl TypeWriter for Postgresql {
             FieldType::AutoInc => "serial".to_owned(),
         }
     }
+    fn supports_sequences(&self) -> bool { true }
 }
 
 /// MySQL type serializator

@@ -39,7 +39,3 @@ ALTER TABLE my_schema.cache OWNER TO rw_user;
 GRANT ALL ON TABLE my_schema.cache TO rw_user;
 GRANT ALL ON TABLE my_schema.cache TO upd_user;
 GRANT SELECT ON TABLE my_schema.cache TO ro_user;
-ALTER SEQUENCE my_schema.asignaciones_cache_id_seq OWNER TO rw_user;
-GRANT ALL ON SEQUENCE my_schema.asignaciones_cache_id_seq TO rw_user;
-GRANT ALL ON SEQUENCE my_schema.asignaciones_cache_id_seq TO upd_user;
-GRANT SELECT ON SEQUENCE my_schema.asignaciones_cache_id_seq TO ro_user;
