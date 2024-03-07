@@ -16,7 +16,6 @@ CREATE TABLE my_schema.users (
   supervisor_id text NULL,
   is_locked_by_supervisor bool NOT NULL DEFAULT false,
   is_locked_by_headquarters bool NOT NULL DEFAULT false,
-  CONSTRAINT users_workspace_user_id_pk PRIMARY KEY (workspace,user_id),
   CONSTRAINT users_workspace_user_name_uk UNIQUE (workspace,user_name)
 );
 ALTER TABLE my_schema.users OWNER TO rw_user;

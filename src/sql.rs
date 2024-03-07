@@ -32,7 +32,7 @@ pub trait DBObject : Debug {
     fn name(&self) -> Option<&str> { None }
     fn should_delay_generation(&self, _type_writer:&dyn TypeWriter) -> bool { false }
     fn is_delayed(&self, _type_writer:&dyn TypeWriter) -> bool { false }
-    fn delayed_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: Vec<Box<& dyn DBObject>>) -> String {
+    fn delayed_to_sql(&mut self, _type_writer:&dyn TypeWriter, _delayed: Vec<Box<& dyn DBObject>>) -> String {
         panic!("should not run a non-reimplemented delayed_to_sql()!")
     }
 }
@@ -479,6 +479,7 @@ impl ObjectPath {
 pub struct Table {
     pub path: ObjectPath,
     pub fields: Fields,
+    extras: Option< Vec<String> >,
 }
 impl Table {
     /// Create a table with ObjectPath and Fields
@@ -499,6 +500,7 @@ impl Table {
         Table {
             path: path.to_owned(),
             fields,
+            extras: None,
         }
     }
     /// Get the indexed fields in this Table, if any
@@ -538,7 +540,12 @@ impl DBObject for Table {
             cts.push(Box::new(UniqueKey{ name: format!("{}_{}", self.path.name, uks.join("_")), fields:uks}))
         }
         let refs : Vec<String> = cts.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
-        let mut t=format!("CREATE TABLE {} (\n  {}", type_writer.schema(&self.path), cols.join(",\n  "));
+        let extras = if let Some(ext) = &self.extras {
+            format!(",\n  {}", ext.join(",\n  "))
+        } else {
+            "".to_owned()
+        };
+        let mut t=format!("CREATE TABLE {} (\n  {}{}", type_writer.schema(&self.path), cols.join(",\n  "), extras);
         if ! refs.is_empty() {
             t += format!(",\n  {}", refs.join(",\n  ")).as_str()
         }
@@ -549,9 +556,15 @@ impl DBObject for Table {
     fn should_delay_generation(&self, type_writer:&dyn TypeWriter) -> bool {
         ! type_writer.supports_alter_table_add_pk()
     }
-    fn delayed_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: Vec<Box<& dyn DBObject>>) -> String {
-        // TODO: add a ForeignKey to self.fields for each _delayed object
-        panic!("should not run a non-reimplemented delayed_to_sql()!")
+    fn delayed_to_sql(&mut self, type_writer:&dyn TypeWriter, delayed: Vec<Box<& dyn DBObject>>) -> String {
+        let mut extras = Vec::new();
+        for obj in delayed.iter() {
+            if self.path.name == obj.name().unwrap() {
+                extras.push(obj.to_sql(type_writer))
+            }
+        }
+        self.extras = Some(extras);
+        self.to_sql(type_writer)
     }
 }
 

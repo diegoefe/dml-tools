@@ -12,7 +12,6 @@ CREATE TABLE users (
   supervisor_id text NULL,
   is_locked_by_supervisor integer NOT NULL DEFAULT false,
   is_locked_by_headquarters integer NOT NULL DEFAULT false,
-  CONSTRAINT users_workspace_user_id_pk PRIMARY KEY (workspace,user_id),
   CONSTRAINT users_workspace_user_name_uk UNIQUE (workspace,user_name)
 );
 CREATE TABLE cache (

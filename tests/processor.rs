@@ -50,10 +50,10 @@ fn generate_from_code(type_writer:Option<BxTypeWriter>) -> Vec<String> {
     add_grant!(proc, GrantType::Usage, &roles.ro, &oschema);
 
     let u_fields = vec![
-        Field::new("workspace", &FieldAttributes::new_uk_pk(FieldType::Txt)),
+        Field::new("workspace", &FieldAttributes::new_uk(FieldType::Txt)),
         Field::new("is_archived", &FieldAttributes::new(FieldType::Bool)),
         Field::new("creation_date", &FieldAttributes::new_nn(FieldType::Txt)),
-        Field::new("user_id", &FieldAttributes::new_pk(FieldType::Txt)),
+        Field::new("user_id", &FieldAttributes::new_nn(FieldType::Txt)),
         Field::new("user_name", &FieldAttributes::new_uk(FieldType::Txt)),
         Field::new("full_name", &FieldAttributes::new(FieldType::Txt)),
         Field::new("role", &FieldAttributes::new_nn(FieldType::Txt)),
