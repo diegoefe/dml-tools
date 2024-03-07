@@ -33,7 +33,7 @@ pub trait DBObject : Debug {
     fn name(&self) -> Option<&str> { None }
     fn should_delay_generation(&self, _type_writer:&dyn TypeWriter) -> bool { false }
     fn is_delayed(&self, _type_writer:&dyn TypeWriter) -> bool { false }
-    fn delayed_to_sql(&mut self, _type_writer:&dyn TypeWriter, _delayed: Vec<Box<& dyn DBObject>>) -> String {
+    fn delayed_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
         panic!("should not run a non-reimplemented delayed_to_sql()!")
     }
 }
@@ -410,7 +410,12 @@ impl DBObject for ForeignKey {
         } else {
             format!("ALTER TABLE {}\n  ADD ", type_writer.schema(&self.table))
         };
-        format!("{prefix}CONSTRAINT {}_{}_{}_fk\n  FOREIGN KEY ({})\n  REFERENCES {} ({})\n  ON DELETE {} ON UPDATE {};",
+        let (end, sep) = if self.is_delayed(type_writer) {
+            ("", "")
+        } else {
+            (";","\n ")
+        };
+        format!("{prefix}CONSTRAINT {}_{}_{}_fk{sep} FOREIGN KEY ({}){sep} REFERENCES {} ({}){sep} ON DELETE {} ON UPDATE {}{end}",
                 self.table.name, self.ref_table.name, self.fields.join("_"),
                 self.fields.join(","),
                 type_writer.schema(&self.ref_table),
@@ -484,7 +489,6 @@ impl ObjectPath {
 pub struct Table {
     pub path: ObjectPath,
     pub fields: Fields,
-    extras: Option< Vec<String> >,
 }
 impl Table {
     /// Create a table with ObjectPath and Fields
@@ -505,7 +509,6 @@ impl Table {
         Table {
             path: path.to_owned(),
             fields,
-            extras: None,
         }
     }
     /// Get the indexed fields in this Table, if any
@@ -522,10 +525,7 @@ impl Table {
             None
         }
     }
-}
-#[typetag::serde]
-impl DBObject for Table {
-    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+    fn gen_sql(&self, type_writer:&dyn TypeWriter, extras:Option<&Vec<String>>) -> String {
         let cols : Vec<String> = self.fields.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
         let mut cts:Vec<Box<dyn DBObject>> = Vec::new();
         let mut uks:Vec<String> = Vec::new();
@@ -545,31 +545,45 @@ impl DBObject for Table {
             cts.push(Box::new(UniqueKey{ name: format!("{}_{}", self.path.name, uks.join("_")), fields:uks}))
         }
         let refs : Vec<String> = cts.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
-        let extras = if let Some(ext) = &self.extras {
+        let exts = if let Some(ext) = extras {
             format!(",\n  {}", ext.join(",\n  "))
         } else {
             "".to_owned()
         };
-        let mut t=format!("CREATE TABLE {} (\n  {}{}", type_writer.schema(&self.path), cols.join(",\n  "), extras);
+        let mut t=format!("CREATE TABLE {} (\n  {}{}", type_writer.schema(&self.path), cols.join(",\n  "), exts);
         if ! refs.is_empty() {
             t += format!(",\n  {}", refs.join(",\n  ")).as_str()
         }
         t += "\n);";
         t
     }
+}
+#[typetag::serde]
+impl DBObject for Table {
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        self.gen_sql(type_writer, None)
+    }
     fn name(&self) -> Option<&str> { Some(&self.path.name) }
     fn should_delay_generation(&self, type_writer:&dyn TypeWriter) -> bool {
         ! type_writer.supports_alter_table_add_pk()
     }
-    fn delayed_to_sql(&mut self, type_writer:&dyn TypeWriter, delayed: Vec<Box<& dyn DBObject>>) -> String {
+    fn delayed_to_sql(&self, type_writer:&dyn TypeWriter, delayed: &Vec<&Box<& dyn DBObject>>) -> String {
         let mut extras = Vec::new();
         for obj in delayed.iter() {
+            // println!("Va obj [{}] [{:?}] [{}]", self.path.name, obj.name().unwrap(), obj.to_sql(type_writer));
             if self.path.name == obj.name().unwrap() {
-                extras.push(obj.to_sql(type_writer))
+                let sql = obj.to_sql(type_writer);
+                // println!("sql [{sql}]");    
+                if ! sql.is_empty() {
+                    extras.push(sql)
+                }
             }
         }
-        self.extras = Some(extras);
-        self.to_sql(type_writer)
+        if extras.is_empty() {
+            self.gen_sql(type_writer, None)
+        } else {
+            self.gen_sql(type_writer, Some(&extras))
+        }
     }
 }
 

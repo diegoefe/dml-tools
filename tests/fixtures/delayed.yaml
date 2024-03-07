@@ -1,0 +1,101 @@
+- tag: Schema
+  name: my_schema
+  owner: rw_user
+- tag: Grant
+  permission: All
+  to: rw_user
+  on:
+    schema: null
+    name: my_schema
+    otype: Schema
+- tag: Owner
+  to: rw_user
+  of:
+    schema: my_schema
+    name: users
+    otype: Table
+- tag: Table
+  path:
+    schema: my_schema
+    name: users
+    otype: Table
+  fields:
+  - name: id
+    attributes:
+      type: auto_increment
+  - name: workspace
+    attributes:
+      unique: true
+      primary_key: true
+  - name: is_archived
+    attributes:
+      type: bool
+  - name: creation_date
+    attributes:
+      empty: false
+  - name: user_id
+    attributes:
+      empty: false
+      primary_key: true
+  - name: user_name
+    attributes:
+      unique: true
+  - name: full_name
+    attributes: {}
+  - name: role
+    attributes:
+      empty: false
+  - name: is_locked
+    attributes:
+      type: bool
+      empty: false
+  - name: email
+    attributes: {}
+  - name: phone_number
+    attributes: {}
+  - name: supervisor_id
+    attributes: {}
+  - name: is_locked_by_supervisor
+    attributes:
+      type: bool
+      empty: false
+      defval: 'false'
+  - name: is_locked_by_headquarters
+    attributes:
+      type: bool
+      empty: false
+      defval: 'false'
+- tag: Index
+  table:
+    schema: my_schema
+    name: my_table
+    otype: Table
+  fields:
+  - a_field
+  - another_field
+- tag: UniqueKey
+  name: my_unique_key
+  fields:
+  - uk_field
+  - another_uk_field
+- tag: PrimaryKey
+  name: my_pk
+  fields:
+  - pk_field
+- tag: ForeignKey
+  table:
+    schema: schema1
+    name: users
+    otype: Table
+  fields:
+  - field1
+  - field2
+  ref_table:
+    schema: schema1
+    name: my_reftable
+    otype: Table
+  ref_fields:
+  - rfield1
+  - rfield2
+  on_delete: Restrict
+  on_update: Cascade
