@@ -42,7 +42,7 @@ fn generate_from_code(type_writer:Option<BxTypeWriter>) -> Vec<String> {
     let my_schema = String::from("my_schema");
     let schema = Schema::new(&my_schema, &roles.rw);
     proc.add(&schema);
-    let oschema = ObjectPath::new_schema(&schema.name);
+    let oschema = ObjectPath::new_table_only(&schema.name);
     
     // add_grant!(proc, g, GrantType::Usage, &roles.rw, &oschema);
     add_grant!(proc, GrantType::All, &roles.rw, &oschema);

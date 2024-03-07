@@ -467,7 +467,7 @@ impl ObjectPath {
         ObjectPath { schema: Some(schema.to_string()), name: name.to_string(), otype:ObjectType::Table }
     }
     /// Create ObjectPath of Schema
-    pub fn new_schema(name:&str) -> Self {
+    pub fn new_table_only(name:&str) -> Self {
         ObjectPath { schema: None, name: name.to_string(), otype:ObjectType::Schema }
     }
     /// Create ObjectPath of a Sequence

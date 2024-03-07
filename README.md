@@ -138,7 +138,7 @@ One can either, load it from this YAML file:
     let my_schema = String::from("my_schema");
     let schema = Schema::new(&my_schema, &roles.rw);
     processor.add(&schema);
-    let oschema = ObjectPath::new_schema(&schema.name);
+    let oschema = ObjectPath::new_table_only(&schema.name);
 
     add_grant!(processor, GrantType::All, &roles.rw, &oschema);
     add_grant!(processor, GrantType::Usage, &roles.upd, &oschema);
