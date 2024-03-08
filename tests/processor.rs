@@ -17,6 +17,12 @@ const DES_SER_FILE: &str = concat!(des_ser_base!(), ".yaml");
 const DES_SER_FILE_COMP: &str = concat!(des_ser_base!(), "_comp.yaml");
 const NUM_STATEMENTS: usize = 18;
 
+fn print_if_different(left:&str, right:&str) {
+    if left != right {
+        println!("\n Left:\n{left}\n---------\nRight:\n{right}\n")
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MyRoles {
     pub rw: String,
@@ -105,9 +111,7 @@ fn check_processor_from_code(type_writer:BxTypeWriter) {
     let re_mnl = regex::Regex::new(r"\n+").unwrap();
     let rsqls = sqls.join("\n");
     let sqlsj = re_mnl.replace_all(&rsqls, "\n");
-    if sqlsj != pstr {
-        println!("\n Left:\n{sqlsj}\n---------\nRight:\n{pstr}\n")
-    }
+    print_if_different(&sqlsj, &pstr);
     assert_eq!(sqlsj, pstr);
     // assert_eq!(sqls.len(), NUM_STATEMENTS);
     let psqls:Vec<&str> = pstr.split(";").filter(|s| ! s.is_empty()).collect();
@@ -147,6 +151,20 @@ fn test_processor_from_file() {
 
     remove_file(DES_SER_FILE).unwrap();
     remove_file(DES_SER_FILE_COMP).unwrap();
+}
+
+const SQLI_YAML : &str = "tests/fixtures/sqlite-init.yaml";
+const SQLI_SQL : &str = "tests/fixtures/sqlite-init.sql";
+#[test]
+fn test_processor_sqlite_from_yaml() {
+    let loader = Loader::new_from_file(SQLI_YAML).unwrap();
+    let tr: BxTypeWriter = Box::new(Sqlite{});
+    let proc = Processor::new_with_objects(loader.objects(),Some(tr));
+
+    let expected = read_file_into_string(SQLI_SQL);
+    let generated = proc.join_sql_statements();
+    print_if_different(&expected, &generated);
+    assert_eq!(generated, expected)
 }
 
 // const DEL_FILE : &str = "tests/fixtures/delayed.yaml";

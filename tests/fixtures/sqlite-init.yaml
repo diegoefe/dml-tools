@@ -1,0 +1,265 @@
+- tag: Schema
+  name: $$schema$$
+  owner: $$rw_user$$
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: null
+    name: $$schema$$
+    otype: Schema
+- tag: Grant
+  permission: Usage
+  to: $$ro_user$$
+  on:
+    schema: null
+    name: $$schema$$
+    otype: Schema
+## perms
+- tag: Table
+  path:
+    schema: $$schema$$
+    name: perms
+    otype: Table
+  fields:
+  - name: id
+    attributes:
+      type: auto_increment
+      primary_key: true
+      empty: false
+  - name: perm_name
+    attributes:
+      empty: false
+      unique: true
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: $$schema$$
+    name: perms
+    otype: Table
+- tag: Grant
+  permission: Select
+  to: $$ro_user$$
+  on:
+    schema: $$schema$$
+    name: perms
+    otype: Table
+## roles_perms
+- tag: Table
+  path:
+    schema: $$schema$$
+    name: roles_perms
+    otype: Table
+  fields:
+  - name: id_role
+    attributes:
+      type: int
+      empty: false
+      primary_key: true
+  - name: id_perm
+    attributes:
+      type: int
+      empty: false
+      primary_key: true
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: $$schema$$
+    name: roles_perms
+    otype: Table
+- tag: Grant
+  permission: Select
+  to: $$ro_user$$
+  on:
+    schema: $$schema$$
+    name: roles_perms
+    otype: Table
+## roles
+- tag: Table
+  path:
+    schema: $$schema$$
+    name: roles
+    otype: Table
+  fields:
+  - name: id
+    attributes:
+      type: auto_increment
+      # primary_key: true
+      empty: false
+  - name: role_name
+    attributes:
+      empty: false
+      unique: true
+  - name: level
+    attributes:
+      type: int
+      empty: false
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: $$schema$$
+    name: roles
+    otype: Table
+- tag: Grant
+  permission: Select
+  to: $$ro_user$$
+  on:
+    schema: $$schema$$
+    name: roles
+    otype: Table
+## provincias
+- tag: Table
+  path:
+    schema: $$schema$$
+    name: provincias 
+    otype: Table
+  fields:
+  - name: nprvnc
+    type: int
+    attributes:
+      primary_key: true
+      empty: false
+      unique: true
+  - name: cdscrpcn
+    attributes:
+      empty: false
+      unique: true
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: $$schema$$
+    name: provincias
+    otype: Table
+- tag: Grant
+  permission: Select
+  to: $$ro_user$$
+  on:
+    schema: $$schema$$
+    name: provincias
+    otype: Table
+## users
+- tag: Table
+  path:
+    schema: $$schema$$
+    name: users
+    otype: Table
+  fields:
+  - name: id
+    attributes:
+      type: auto_increment
+      primary_key: true
+      empty: false
+  - name: username 
+    attributes:
+      unique: true
+      empty: false
+  - name: first_name
+    attributes:
+      empty: false
+  - name: last_name
+    attributes:
+      empty: false
+  - name: password
+    attributes:
+      empty: false
+  - name: email
+    attributes: {}
+  - name: role
+    attributes:
+      empty: false
+  - name: provincia
+    type: int
+    attributes: {}
+  - name: survey_user
+    attributes: {}
+  - name: is_locked
+    attributes:
+      type: bool
+      empty: false
+      defval: 'false'
+  - name: created_at
+    attributes:
+      empty: false
+      defval: 'CURRENT_TIMESTAMP'
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: $$schema$$
+    name: users
+    otype: Table
+- tag: Grant
+  permission: Select
+  to: $$ro_user$$
+  on:
+    schema: $$schema$$
+    name: users
+    otype: Table
+## foreign key users -> roles
+- tag: ForeignKey
+  table:
+   schema: $$schema$$
+   name: users
+   otype: Table
+  fields:
+   - role
+  ref_table:
+   schema: $$schema$$
+   name: roles
+   otype: Table
+  ref_fields:
+   - role_name
+  on_delete: Restrict
+  on_update: Cascade
+## foreign key users -> provincias
+- tag: ForeignKey
+  table:
+   schema: $$schema$$
+   name: users
+   otype: Table
+  fields:
+   - provincia
+  ref_table:
+   schema: $$schema$$
+   name: provincias
+   otype: Table
+  ref_fields:
+   - nprvnc
+  on_delete: Restrict
+  on_update: Cascade
+## foreign key perms -> roles_perms
+- tag: ForeignKey
+  table:
+   schema: $$schema$$
+   name: roles_perms
+   otype: Table
+  fields:
+   - id_role
+  ref_table:
+   schema: $$schema$$
+   name: roles
+   otype: Table
+  ref_fields:
+   - id
+  on_delete: Cascade
+  on_update: Cascade
+## foreign key roles -> roles_perms
+- tag: ForeignKey
+  table:
+   schema: $$schema$$
+   name: roles_perms
+   otype: Table
+  fields:
+   - id_perm
+  ref_table:
+   schema: $$schema$$
+   name: perms
+   otype: Table
+  ref_fields:
+   - id
+  on_delete: Cascade
+  on_update: Cascade

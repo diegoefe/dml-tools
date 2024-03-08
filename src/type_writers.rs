@@ -56,5 +56,5 @@ impl TypeWriter for Sqlite {
     fn index_type(&self) -> String { "".to_string() }
     fn supports_schemas(&self) -> bool { false }
     fn supports_permissions(&self) -> bool { false }
-    fn supports_alter_table_add_pk(&self) -> bool { false }
+    fn supports_auto_increment(&self) -> bool { false }
 }

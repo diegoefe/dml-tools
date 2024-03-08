@@ -20,7 +20,7 @@ pub trait TypeWriter {
     fn index_type(&self) -> String { " USING btree".to_string() }
     fn supports_schemas(&self) -> bool { true }
     fn supports_permissions(&self) -> bool { true }
-    fn supports_alter_table_add_pk(&self) -> bool { true }
+    fn supports_auto_increment(&self) -> bool { true }
     fn supports_sequences(&self) -> bool { false }
 }
 
@@ -538,7 +538,9 @@ impl Table {
         let mut pks:Vec<String> = Vec::new();
         for f in self.fields.iter() {
             if f.attributes.primary_key {
-                pks.push(f.name.to_owned())
+                if type_writer.supports_auto_increment() || f.attributes.dtype != FieldType::AutoInc {
+                    pks.push(f.name.to_owned())
+                }                
             }
             if f.attributes.unique {
                 uks.push(f.name.to_owned())
