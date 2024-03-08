@@ -32,6 +32,11 @@ fn test_tables() {
     // dml_tools::util::write_yaml_to_file("local-foreign_keys.yaml", &fk).expect("To write FK to file");
     // println!("{}", fk.to_string());
     let tfk="tests/fixtures/test-table-fks.sql";
-    assert_eq!(fk.to_sql(type_writer.as_ref()), fs::read_to_string(tfk).expect(tfk));
+    let left = fk.to_sql(type_writer.as_ref());
+    let right = fs::read_to_string(tfk).expect(tfk);
+    if left != right {
+        println!("\n Left:\n{left}\n---------\nRight:\n{right}\n")
+    }
+    assert_eq!(left, right);
 
 }

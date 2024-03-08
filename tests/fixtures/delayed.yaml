@@ -78,10 +78,6 @@
   fields:
   - uk_field
   - another_uk_field
-- tag: PrimaryKey
-  name: my_pk
-  fields:
-  - pk_field
 - tag: ForeignKey
   table:
     schema: schema1

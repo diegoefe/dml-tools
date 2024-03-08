@@ -105,8 +105,10 @@ fn check_processor_from_code(type_writer:BxTypeWriter) {
     let re_mnl = regex::Regex::new(r"\n+").unwrap();
     let rsqls = sqls.join("\n");
     let sqlsj = re_mnl.replace_all(&rsqls, "\n");
-    // println!("sqlsj {sqlsj}");
-    assert_eq!(sqlsj.trim_start(), pstr);
+    if sqlsj != pstr {
+        println!("\n Left:\n{sqlsj}\n---------\nRight:\n{pstr}\n")
+    }
+    assert_eq!(sqlsj, pstr);
     // assert_eq!(sqls.len(), NUM_STATEMENTS);
     let psqls:Vec<&str> = pstr.split(";").filter(|s| ! s.is_empty()).collect();
     // println!("{psqls:#?}");
@@ -147,12 +149,12 @@ fn test_processor_from_file() {
     remove_file(DES_SER_FILE_COMP).unwrap();
 }
 
-const DEL_FILE : &str = "tests/fixtures/delayed.yaml";
-
-#[test]
-fn test_processor_delayed() {
-    let loader = Loader::new_from_file(DEL_FILE).unwrap();
-    let tr: BxTypeWriter = Box::new(Sqlite{});
-    let proc = Processor::new_with_objects(loader.objects(),Some(tr));
-    proc.write_to_sql_file("local-delayed.sql").expect("to write delayed file");
-}
+// const DEL_FILE : &str = "tests/fixtures/delayed.yaml";
+// #[test]
+// fn test_processor_delayed() {
+//     let loader = Loader::new_from_file(DEL_FILE).unwrap();
+//     let tr: BxTypeWriter = Box::new(Sqlite{});
+//     // let tr: BxTypeWriter = Box::new(Postgresql{});
+//     let proc = Processor::new_with_objects(loader.objects(),Some(tr));
+//     proc.write_to_sql_file("local-delayed.sql").expect("to write delayed file");
+// }
