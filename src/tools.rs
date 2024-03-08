@@ -46,24 +46,21 @@ impl <'a> Processor<'a> {
     /// Get the list of serialized SQL sql_statements
     pub fn sql_statements(&self) -> Vec<String> {
         let mut out = Vec::new();
-        let mut delayed_objs = Vec::new();
-        let mut delayed_gen = Vec::new();
+        let mut delayed = Vec::new();
         for obj in &self.objs {
-            if obj.is_delayed(self.type_writer.as_ref()) {
-                delayed_objs.push(obj)
-            } else if obj.should_delay_generation(self.type_writer.as_ref()) {
-                delayed_gen.push(obj)
+            if ! obj.is_top_level() {
+                delayed.push(obj)
             } else {
-                let sql = obj.to_sql(self.type_writer.as_ref());
+                let sql;
+                if delayed.is_empty() {
+                    sql = obj.to_sql(self.type_writer.as_ref())
+                } else {
+                    sql = obj.top_level_to_sql(self.type_writer.as_ref(), &delayed);
+                    delayed.clear()
+                };
                 if ! sql.is_empty() {
                     out.push(sql);
                 }
-            }
-        }
-        for gen in delayed_gen.iter() {
-            let sql = gen.delayed_to_sql(self.type_writer.as_ref(), &delayed_objs);
-            if ! sql.is_empty() {
-                out.push(sql);
             }
         }
         out

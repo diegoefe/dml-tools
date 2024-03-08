@@ -29,12 +29,13 @@ pub trait TypeWriter {
 #[typetag::serde(tag = "tag")]
 pub trait DBObject : Debug {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
-    // if should_delay_generation() or is_delayed() MUST return Some(name)!
     fn name(&self) -> Option<&str> { None }
-    fn should_delay_generation(&self, _type_writer:&dyn TypeWriter) -> bool { false }
-    fn is_delayed(&self, _type_writer:&dyn TypeWriter) -> bool { false }
-    fn delayed_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
-        panic!("should not run a non-reimplemented delayed_to_sql()!")
+    fn is_top_level(&self) -> bool { false }
+    fn top_level_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
+        if self.is_top_level() {
+            panic!("should not run a non-reimplemented top_level_to_sql()!")
+        }
+        "".to_owned()
     }
 }
 
@@ -290,6 +291,10 @@ impl DBObject for Grant {
         }
         rv
     }
+    fn is_top_level(&self) -> bool { true }
+    fn top_level_to_sql(&self, type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
+        self.to_sql(type_writer)
+    }
 }
 
 /// Owner of a database object generator
@@ -314,6 +319,10 @@ impl DBObject for Owner {
             }
         }
         rv
+    }
+    fn is_top_level(&self) -> bool { true }
+    fn top_level_to_sql(&self, type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
+        self.to_sql(type_writer)
     }
 }
 
@@ -402,18 +411,12 @@ pub struct ForeignKey {
     #[serde(default="default_on_clause")]
     pub on_update: FKOn,
 }
-#[typetag::serde]
-impl DBObject for ForeignKey {
-    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
-        let prefix = if self.is_delayed(type_writer) {
-            "".to_string()
+impl ForeignKey {
+    fn gen_sql(&self, type_writer:&dyn TypeWriter, top_level:bool) -> String {
+        let (prefix, end, sep) = if top_level {
+            ("".to_string(), "", "")
         } else {
-            format!("ALTER TABLE {}\n  ADD ", type_writer.schema(&self.table))
-        };
-        let (end, sep) = if self.is_delayed(type_writer) {
-            ("", "")
-        } else {
-            (";","\n ")
+            (format!("ALTER TABLE {}\n  ADD ", type_writer.schema(&self.table)), ";","\n ")
         };
         format!("{prefix}CONSTRAINT {}_{}_{}_fk{sep} FOREIGN KEY ({}){sep} REFERENCES {} ({}){sep} ON DELETE {} ON UPDATE {}{end}",
                 self.table.name, self.ref_table.name, self.fields.join("_"),
@@ -424,10 +427,13 @@ impl DBObject for ForeignKey {
                 self.on_update.to_string()
         )
     }
-    fn name(&self) -> Option<&str> { Some(&self.table.name) }
-    fn is_delayed(&self, type_writer:&dyn TypeWriter) -> bool {
-        ! type_writer.supports_alter_table_add_pk()
+}
+#[typetag::serde]
+impl DBObject for ForeignKey {
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        self.gen_sql(type_writer, false)
     }
+    fn name(&self) -> Option<&str> { Some(&self.table.name) }
 }
 
 /// Types of upper-level objects
@@ -564,19 +570,15 @@ impl DBObject for Table {
         self.gen_sql(type_writer, None)
     }
     fn name(&self) -> Option<&str> { Some(&self.path.name) }
-    fn should_delay_generation(&self, type_writer:&dyn TypeWriter) -> bool {
-        ! type_writer.supports_alter_table_add_pk()
-    }
-    fn delayed_to_sql(&self, type_writer:&dyn TypeWriter, delayed: &Vec<&Box<& dyn DBObject>>) -> String {
+    fn is_top_level(&self) -> bool { true }
+    fn top_level_to_sql(&self, type_writer:&dyn TypeWriter, delayed: &Vec<&Box<& dyn DBObject>>) -> String {
         let mut extras = Vec::new();
         for obj in delayed.iter() {
             // println!("Va obj [{}] [{:?}] [{}]", self.path.name, obj.name().unwrap(), obj.to_sql(type_writer));
-            if self.path.name == obj.name().unwrap() {
-                let sql = obj.to_sql(type_writer);
-                // println!("sql [{sql}]");    
-                if ! sql.is_empty() {
-                    extras.push(sql)
-                }
+            let sql = obj.to_sql(type_writer);
+            // println!("sql [{sql}]");    
+            if ! sql.is_empty() {
+                extras.push(sql)
             }
         }
         if extras.is_empty() {
@@ -607,6 +609,10 @@ impl DBObject for Schema {
         } else {
             "".to_owned()
         }
+    }
+    fn is_top_level(&self) -> bool { true }
+    fn top_level_to_sql(&self, type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
+        self.to_sql(type_writer)
     }
 }
 
