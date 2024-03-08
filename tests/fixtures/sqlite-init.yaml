@@ -185,20 +185,6 @@
     attributes:
       empty: false
       defval: 'CURRENT_TIMESTAMP'
-- tag: Grant
-  permission: All
-  to: $$rw_user$$
-  on:
-    schema: $$schema$$
-    name: users
-    otype: Table
-- tag: Grant
-  permission: Select
-  to: $$ro_user$$
-  on:
-    schema: $$schema$$
-    name: users
-    otype: Table
 ## foreign key users -> roles
 - tag: ForeignKey
   table:
@@ -263,3 +249,18 @@
    - id
   on_delete: Cascade
   on_update: Cascade
+
+- tag: Grant
+  permission: All
+  to: $$rw_user$$
+  on:
+    schema: $$schema$$
+    name: users
+    otype: Table
+- tag: Grant
+  permission: Select
+  to: $$ro_user$$
+  on:
+    schema: $$schema$$
+    name: users
+    otype: Table

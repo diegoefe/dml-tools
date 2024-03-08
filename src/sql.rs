@@ -29,7 +29,6 @@ pub trait TypeWriter {
 #[typetag::serde(tag = "tag")]
 pub trait DBObject : Debug {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String;
-    fn name(&self) -> Option<&str> { None }
     fn is_top_level(&self) -> bool { false }
     fn top_level_to_sql(&self, _type_writer:&dyn TypeWriter, _delayed: &Vec<&Box<& dyn DBObject>>) -> String {
         if self.is_top_level() {
@@ -411,13 +410,11 @@ pub struct ForeignKey {
     #[serde(default="default_on_clause")]
     pub on_update: FKOn,
 }
-impl ForeignKey {
-    fn gen_sql(&self, type_writer:&dyn TypeWriter, top_level:bool) -> String {
-        let (prefix, end, sep) = if top_level {
-            ("".to_string(), "", "")
-        } else {
-            (format!("ALTER TABLE {}\n  ADD ", type_writer.schema(&self.table)), ";","\n ")
-        };
+
+#[typetag::serde]
+impl DBObject for ForeignKey {
+    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
+        let (prefix, end, sep) = ("".to_string(), "", "");
         format!("{prefix}CONSTRAINT {}_{}_{}_fk{sep} FOREIGN KEY ({}){sep} REFERENCES {} ({}){sep} ON DELETE {} ON UPDATE {}{end}",
                 self.table.name, self.ref_table.name, self.fields.join("_"),
                 self.fields.join(","),
@@ -427,13 +424,6 @@ impl ForeignKey {
                 self.on_update.to_string()
         )
     }
-}
-#[typetag::serde]
-impl DBObject for ForeignKey {
-    fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
-        self.gen_sql(type_writer, false)
-    }
-    fn name(&self) -> Option<&str> { Some(&self.table.name) }
 }
 
 /// Types of upper-level objects
@@ -571,12 +561,10 @@ impl DBObject for Table {
     fn to_sql(&self, type_writer:&dyn TypeWriter) -> String {
         self.gen_sql(type_writer, None)
     }
-    fn name(&self) -> Option<&str> { Some(&self.path.name) }
     fn is_top_level(&self) -> bool { true }
     fn top_level_to_sql(&self, type_writer:&dyn TypeWriter, delayed: &Vec<&Box<& dyn DBObject>>) -> String {
         let mut extras = Vec::new();
         for obj in delayed.iter() {
-            // println!("Va obj [{}] [{:?}] [{}]", self.path.name, obj.name().unwrap(), obj.to_sql(type_writer));
             let sql = obj.to_sql(type_writer);
             // println!("sql [{sql}]");    
             if ! sql.is_empty() {

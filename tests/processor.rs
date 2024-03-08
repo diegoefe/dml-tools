@@ -167,10 +167,12 @@ fn test_processor_sqlite_from_yaml() {
     assert_eq!(generated, expected)
 }
 
-// const DEL_FILE : &str = "tests/fixtures/delayed.yaml";
+// // const DEL_FILE : &str = "tests/fixtures/delayed.yaml";
 // #[test]
 // fn test_processor_delayed() {
-//     let loader = Loader::new_from_file(DEL_FILE).unwrap();
+//     // let loader = Loader::new_from_file(DEL_FILE).unwrap();
+//     let loader = Loader::new_from_file(SQLI_YAML).unwrap();
+//     // println!("objecs: {:#?}", loader.objects());
 //     let tr: BxTypeWriter = Box::new(Sqlite{});
 //     // let tr: BxTypeWriter = Box::new(Postgresql{});
 //     let proc = Processor::new_with_objects(loader.objects(),Some(tr));

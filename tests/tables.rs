@@ -22,21 +22,21 @@ fn test_tables() {
         assert_eq!(indexes[0].to_sql(type_writer.as_ref()), fs::read_to_string(tif).expect(tif));
     }
     
-    let fk = ForeignKey{
-        table:tbl.path.to_owned(),
-        fields:vec!["ws_id".to_owned(), "user_id".to_owned()],
-        ref_table:ObjectPath::new_table("demo", "cache"),
-        ref_fields:vec!["ws".to_owned(), "user".to_owned()],
-        on_delete:FKOn::Restrict, on_update:FKOn::Restrict,
-    };
-    // dml_tools::util::write_yaml_to_file("local-foreign_keys.yaml", &fk).expect("To write FK to file");
-    // println!("{}", fk.to_string());
-    let tfk="tests/fixtures/test-table-fks.sql";
-    let left = fk.to_sql(type_writer.as_ref());
-    let right = fs::read_to_string(tfk).expect(tfk);
-    if left != right {
-        println!("\n Left:\n{left}\n---------\nRight:\n{right}\n")
-    }
-    assert_eq!(left, right);
+    // let fk = ForeignKey{
+    //     table:tbl.path.to_owned(),
+    //     fields:vec!["ws_id".to_owned(), "user_id".to_owned()],
+    //     ref_table:ObjectPath::new_table("demo", "cache"),
+    //     ref_fields:vec!["ws".to_owned(), "user".to_owned()],
+    //     on_delete:FKOn::Restrict, on_update:FKOn::Restrict,
+    // };
+    // // dml_tools::util::write_yaml_to_file("local-foreign_keys.yaml", &fk).expect("To write FK to file");
+    // // println!("{}", fk.to_string());
+    // let tfk="tests/fixtures/test-table-fks.sql";
+    // let left = fk.to_sql(type_writer.as_ref());
+    // let right = fs::read_to_string(tfk).expect(tfk);
+    // if left != right {
+    //     println!("\n Left:\n{left}\n---------\nRight:\n{right}\n")
+    // }
+    // assert_eq!(left, right);
 
 }

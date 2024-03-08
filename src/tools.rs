@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::prelude::*;
 
 type BxTypeWriter = Box<dyn TypeWriter>;
+type BxObject<'a> = &'a Box<&'a dyn DBObject>;
 type Objects = Vec<Box<dyn DBObject>>;
 
 /// DML processor and SQL generator
@@ -43,25 +44,37 @@ impl <'a> Processor<'a> {
         self.objs.push(Box::new(object));
         self
     }
+    fn add_to_toplevel(&self, obj:&mut BxObject, out:&mut Vec<String>, delayed:&mut Vec<&Box<&dyn DBObject>>) {
+        let sql;
+        if delayed.is_empty() {
+            // println!("{:?}: SIMPLE to_sql()", obj);
+            sql = obj.to_sql(self.type_writer.as_ref())
+        } else {
+            // println!("{:?}: TOP-LEVEL to_sql()", obj);
+            sql = obj.top_level_to_sql(self.type_writer.as_ref(), &delayed);
+            delayed.clear()
+        };
+        if ! sql.is_empty() {
+            out.push(sql);
+        }
+    }
     /// Get the list of serialized SQL sql_statements
     pub fn sql_statements(&self) -> Vec<String> {
         let mut out = Vec::new();
         let mut delayed = Vec::new();
+        let mut top : Option<BxObject> = None;
         for obj in &self.objs {
             if ! obj.is_top_level() {
                 delayed.push(obj)
             } else {
-                let sql;
-                if delayed.is_empty() {
-                    sql = obj.to_sql(self.type_writer.as_ref())
-                } else {
-                    sql = obj.top_level_to_sql(self.type_writer.as_ref(), &delayed);
-                    delayed.clear()
-                };
-                if ! sql.is_empty() {
-                    out.push(sql);
+                if let Some(mut tl) = top {
+                    self.add_to_toplevel(&mut tl, &mut out, &mut delayed);
                 }
+                top = Some(obj)
             }
+        }
+        if let Some(mut tl) = top {
+            self.add_to_toplevel(&mut tl, &mut out, &mut delayed)
         }
         out
     }
