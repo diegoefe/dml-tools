@@ -6,6 +6,7 @@ CREATE TABLE perms (
 CREATE TABLE roles_perms (
   id_role integer NOT NULL,
   id_perm integer NOT NULL,
+  CONSTRAINT roles_perms_perms_id_perm_fk FOREIGN KEY (id_perm) REFERENCES perms (id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT roles_perms_id_role_id_perm_pk PRIMARY KEY (id_role,id_perm)
 );
 CREATE TABLE roles (
@@ -34,7 +35,5 @@ CREATE TABLE users (
   created_at text NOT NULL DEFAULT "CURRENT_TIMESTAMP",
   CONSTRAINT users_roles_role_fk FOREIGN KEY (role) REFERENCES roles (role_name) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT users_provincias_provincia_fk FOREIGN KEY (provincia) REFERENCES provincias (nprvnc) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT roles_perms_roles_id_role_fk FOREIGN KEY (id_role) REFERENCES roles (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT roles_perms_perms_id_perm_fk FOREIGN KEY (id_perm) REFERENCES perms (id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT users_username_uk UNIQUE (username)
 );

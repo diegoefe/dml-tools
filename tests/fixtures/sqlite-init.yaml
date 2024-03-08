@@ -62,6 +62,24 @@
       type: int
       empty: false
       primary_key: true
+
+## foreign key roles -> roles_perms
+- tag: ForeignKey
+  table:
+   schema: $$schema$$
+   name: roles_perms
+   otype: Table
+  fields:
+   - id_perm
+  ref_table:
+   schema: $$schema$$
+   name: perms
+   otype: Table
+  ref_fields:
+   - id
+  on_delete: Cascade
+  on_update: Cascade
+
 - tag: Grant
   permission: All
   to: $$rw_user$$
@@ -110,6 +128,22 @@
     schema: $$schema$$
     name: roles
     otype: Table
+## foreign key perms -> roles_perms
+- tag: ForeignKey
+  table:
+   schema: $$schema$$
+   name: roles_perms
+   otype: Table
+  fields:
+   - id_role
+  ref_table:
+   schema: $$schema$$
+   name: roles
+   otype: Table
+  ref_fields:
+   - id
+  on_delete: Cascade
+  on_update: Cascade
 ## provincias
 - tag: Table
   path:
@@ -216,38 +250,6 @@
   ref_fields:
    - nprvnc
   on_delete: Restrict
-  on_update: Cascade
-## foreign key perms -> roles_perms
-- tag: ForeignKey
-  table:
-   schema: $$schema$$
-   name: roles_perms
-   otype: Table
-  fields:
-   - id_role
-  ref_table:
-   schema: $$schema$$
-   name: roles
-   otype: Table
-  ref_fields:
-   - id
-  on_delete: Cascade
-  on_update: Cascade
-## foreign key roles -> roles_perms
-- tag: ForeignKey
-  table:
-   schema: $$schema$$
-   name: roles_perms
-   otype: Table
-  fields:
-   - id_perm
-  ref_table:
-   schema: $$schema$$
-   name: perms
-   otype: Table
-  ref_fields:
-   - id
-  on_delete: Cascade
   on_update: Cascade
 
 - tag: Grant
