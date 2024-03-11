@@ -349,6 +349,7 @@ impl DBObject for Index {
                 type_writer.index_type(),
                 self.fields.join(","))
     }
+	fn is_top_level(&self) -> bool { true }
 }
 
 type Indexes = Vec<Index>;
