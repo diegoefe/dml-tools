@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Field::new("is_locked_by_supervisor", &FieldAttributes::new_nn_def(FieldType::Bool, "false")),
     ];
 
-    let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields);
+    let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields, None);
     processor.add(&t_users);
     grant_perms!(&mut processor, roles, &t_users.path);
 

@@ -9,6 +9,9 @@ use dml_tools::util::*;
 
 use dml_tools::macros::*;
 
+mod common;
+use common::print_if_different;
+
 macro_rules! des_ser_base {
     () => { "local-proc-objs" };
 }
@@ -17,11 +20,6 @@ const DES_SER_FILE: &str = concat!(des_ser_base!(), ".yaml");
 const DES_SER_FILE_COMP: &str = concat!(des_ser_base!(), "_comp.yaml");
 const NUM_STATEMENTS: usize = 18;
 
-fn print_if_different(left:&str, right:&str) {
-    if left != right {
-        println!("\n Left:\n{left}\n---------\nRight:\n{right}\n")
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MyRoles {
@@ -71,7 +69,7 @@ fn generate_from_code(type_writer:Option<BxTypeWriter>) -> Vec<String> {
         Field::new("is_locked_by_headquarters", &FieldAttributes::new_nn_def(FieldType::Bool, "false")),
     ];
     // println!("{u_fields:#?}");
-    let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields);
+    let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields, None);
     // println!("{}", t_users);
     proc.add(&t_users);
     grant_perms!(&mut proc, &roles, &t_users.path);
@@ -89,7 +87,7 @@ fn generate_from_code(type_writer:Option<BxTypeWriter>) -> Vec<String> {
         Field::new("otro", &FieldAttributes::new_meta(FieldType::Int, "4")),
     ];
     // println!("{c_fields:#?}");
-    let t_cache = Table::new(&ObjectPath::new_table(&my_schema, "cache"), c_fields);
+    let t_cache = Table::new(&ObjectPath::new_table(&my_schema, "cache"), c_fields, None);
     // println!("{}", t_cache);
     proc.add(&t_cache);
     grant_perms!(&mut proc, &roles, &t_cache.path);

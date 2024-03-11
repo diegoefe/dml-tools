@@ -124,7 +124,7 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                     Field::new("is_locked_by_headquarters", &FieldAttributes::new_nn_def(FieldType::Bool, "false")),
                 ];
                 // println!("{u_fields:#?}");
-                let t_users = Table::new(&spec.path_table_users(), u_fields);
+                let t_users = Table::new(&spec.path_table_users(), u_fields, None);
                 // println!("{}", t_users);
                 processor.add(&t_users);
                 grant_perms!(&mut processor, &spec.roles, &t_users.path);
@@ -141,7 +141,7 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                     Field::new("date_updated", &FieldAttributes::new_nn(FieldType::Txt)),
                 ];
                 // println!("{c_fields:#?}");
-                let t_cache = Table::new(&spec.path_table_cache(), c_fields);
+                let t_cache = Table::new(&spec.path_table_cache(), c_fields, None);
                 // println!("{}", t_cache);
                 processor.add(&t_cache);
                 grant_perms!(&mut processor, &spec.roles, &t_cache.path);
@@ -165,23 +165,6 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                         m_fields.push(Field{ name:name.to_owned(), attributes:attrs.to_owned()})
                     }
                 }
-                let t_main = Table::new(&spec.path_table_main(), m_fields);
-                // println!("{}", t_main);
-                processor.add(&t_main);
-
-                indexes = if let Some(idxs) = t_main.indexes() {
-                            idxs
-                          } else {
-                            Vec::new()
-                          };
-                if !indexes.is_empty() {
-                    for index in indexes.iter() {
-                        debug!("Got index: {:?}", index);
-                        processor.add(index);
-                    }
-                }
-                grant_perms!(&mut processor, &spec.roles, &t_main.path);
-    
                 if let Some(foreign_keys) = &a_fields.foreign_keys {
                     for fk in foreign_keys.iter() {
                         if has_schema(&spec, &fk.table.schema) && has_schema(&spec, &fk.ref_table.schema) {
@@ -198,12 +181,33 @@ fn gen_ddls(spec:&MySpec) -> Vec<String> {
                             fks.push(nfk);
                         }
                     }
-                    if ! fks.is_empty() {
-                        for fk in fks.iter() {
-                            processor.add(fk);
-                        }
+                    // if ! fks.is_empty() {
+                    //     for fk in fks.iter() {
+                    //         processor.add(fk);
+                    //     }
+                    // }
+                }
+                let the_fks = if fks.is_empty() {
+                   None
+                } else {
+                   Some(fks)
+                };
+                let t_main = Table::new(&spec.path_table_main(), m_fields, the_fks);
+                // println!("{}", t_main);
+                processor.add(&t_main);
+
+                indexes = if let Some(idxs) = t_main.indexes() {
+                    idxs
+                } else {
+                    Vec::new()
+                };
+                if !indexes.is_empty() {
+                    for index in indexes.iter() {
+                        debug!("Got index: {:?}", index);
+                        processor.add(index);
                     }
                 }
+                grant_perms!(&mut processor, &spec.roles, &t_main.path);
                 sqls = processor.sql_statements()
             }
         },

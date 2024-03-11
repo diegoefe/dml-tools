@@ -27,6 +27,13 @@ pub fn test_table_with_writer_to_string(writer:&dyn TypeWriter) -> String {
         Field::new("weight", &FieldAttributes::new(FieldType::Dbl)),
         Field::new("is_married", &FieldAttributes::new(FieldType::Bool)),
     ];
-    let table = Table::new(&ObjectPath::new_table("myschema", "mytable"), fields);
+    let table = Table::new(&ObjectPath::new_table("myschema", "mytable"), fields, None);
     table.to_sql(writer)
+}
+
+#[allow(dead_code)]
+pub fn print_if_different(left:&str, right:&str) {
+    if left != right {
+        println!("\n Left:\n{left}\n---------\nRight:\n{right}\n")
+    }
 }

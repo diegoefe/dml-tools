@@ -478,6 +478,21 @@ impl ObjectPath {
             self.name.to_owned()
         }
     }
+    pub fn is_equal(&self, other:&ObjectPath) -> bool {
+        let my_schema = if let Some(schema) = &self.schema {
+            schema
+        } else {
+            ""
+        };
+        let other_schema = if let Some(schema) = &other.schema {
+            schema
+        } else {
+            ""
+        };
+        return my_schema == other_schema
+            && self.name == other.name
+            && self.otype == other.otype
+    }
 }
 
 /// TABLE generator
@@ -485,10 +500,11 @@ impl ObjectPath {
 pub struct Table {
     pub path: ObjectPath,
     pub fields: Fields,
+    pub fks: Option<ForeignKeys>,
 }
 impl Table {
     /// Create a table with ObjectPath and Fields
-    pub fn new(path:&ObjectPath, fields:Fields) -> Self {
+    pub fn new(path:&ObjectPath, fields:Fields, fks:Option<ForeignKeys>) -> Self {
         // lets check for duplicates
         {
             let mut unicos = HashSet::new();
@@ -501,10 +517,18 @@ impl Table {
             if ! dups.is_empty() {                
                 panic!("{} has duplicated fields: {dups:?}", path.full_name())
             }
+            if let Some(thefks) = &fks {
+                for fk in thefks.iter() {
+                    if ! path.is_equal(&fk.table) {
+                        panic!("{} is not a valid fk for {}", fk.table.full_name(), path.full_name())
+                    }
+                }
+            }
         }
         Table {
             path: path.to_owned(),
             fields,
+            fks,
         }
     }
     /// Get the indexed fields in this Table, if any
@@ -542,7 +566,12 @@ impl Table {
         if ! uks.is_empty() {
             cts.push(Box::new(UniqueKey{ name: format!("{}_{}", self.path.name, uks.join("_")), fields:uks}))
         }
-        let refs : Vec<String> = cts.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
+        let mut refs : Vec<String> = cts.iter().map(|f| f.to_sql(type_writer).to_owned()).collect();
+        if let Some(fks) = &self.fks {
+           for fk in fks.iter() {
+               refs.push(fk.to_sql(type_writer))
+           }
+        }
         let exts = if let Some(ext) = extras {
             format!(",\n  {}", ext.join(",\n  "))
         } else {

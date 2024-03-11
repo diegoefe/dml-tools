@@ -28,13 +28,9 @@ To obtain this DML (Data Manipulation Language) definitions:
     "role" text NULL,
     is_locked text NULL,
     email text NULL,
-    is_locked_by_supervisor text NULL
+    is_locked_by_supervisor text NULL,
+    CONSTRAINT my_table_my_reftable_field1_field2_fk FOREIGN KEY (field1,field2) REFERENCES schema1.my_reftable (rfield1, rfield2) ON DELETE RESTRICT ON UPDATE CASCADE
   );
-  ALTER TABLE schema1.my_table
-    ADD CONSTRAINT my_table_my_reftable_field1_field2_fk
-    FOREIGN KEY (field1,field2)
-    REFERENCES schema1.my_reftable (rfield1,rfield2)
-    ON DELETE RESTRICT ON UPDATE CASCADE;
   ```
 
 One can either, load it from this YAML file:
@@ -153,7 +149,7 @@ One can either, load it from this YAML file:
         Field::new("is_locked_by_supervisor", &FieldAttributes::new_nn_def(FieldType::Bool, "false")),
     ];
 
-    let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields);
+    let t_users = Table::new(&ObjectPath::new_table(&my_schema, "users"), u_fields, None);
     // println!("{}", t_users);
     processor.add(&t_users);
     grant_perms!(&mut processor, roles, &t_users.path);
