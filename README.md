@@ -13,7 +13,7 @@ See [examples](https://github.com/diegoefe/dml-tools/tree/main/examples) for usa
 ```toml
 # Cargo.toml
 [dependencies]
-dml-tools = "0.1"
+dml-tools = "0.2"
 ```
 
 ## Usage
