@@ -3,6 +3,7 @@
   ![crate](https://img.shields.io/crates/d/dml-tools)
   [![LICENSE](https://img.shields.io/crates/l/dml-tools.svg)](https://github.com/diegoefe/dml-tools/blob/main/LICENSE)
   [![docs](https://docs.rs/dml-tools/badge.svg)](https://docs.rs/dml-tools)
+  ![example workflow](https://github.com/diegoefe/dml-tools/actions/workflows/rust.yml/badge.svg)
 
 dml-tools is a library for DML generation and serialization from/to code or YAML files
 
