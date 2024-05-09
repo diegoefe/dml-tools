@@ -1,6 +1,6 @@
 # cargo install cargo-first
 #!/usr/bin/env bash
-set -e
+# set -e
 
 cmd="cargo first"
 # cmd=cargo
